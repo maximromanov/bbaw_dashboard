@@ -15,7 +15,6 @@
 }
 
 * { box-sizing: border-box; }
-
 html, body { margin: 0; padding: 0; }
 
 body {
@@ -47,7 +46,6 @@ body {
   margin-bottom: 40px;
   border-bottom: 1px solid var(--border);
 }
-
 .eyebrow {
   text-transform: uppercase;
   font-size: 0.78rem;
@@ -56,7 +54,6 @@ body {
   margin: 0 0 10px;
   font-weight: 600;
 }
-
 h1 {
   font-family: var(--serif);
   font-weight: 500;
@@ -66,12 +63,7 @@ h1 {
   letter-spacing: -0.01em;
   color: var(--text);
 }
-
-.subtitle {
-  color: var(--text-muted);
-  font-size: 1.05rem;
-  margin: 0;
-}
+.subtitle { color: var(--text-muted); font-size: 1.05rem; margin: 0; }
 
 /* ─── Stats tiles ──────────────────────────────────────── */
 
@@ -81,7 +73,6 @@ h1 {
   gap: 16px;
   margin-bottom: 56px;
 }
-
 .tile {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -89,7 +80,6 @@ h1 {
   padding: 24px 22px;
   box-shadow: var(--shadow);
 }
-
 .tile-value {
   font-family: var(--serif);
   font-size: 2.4rem;
@@ -98,13 +88,7 @@ h1 {
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-
-.tile-label {
-  margin-top: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
+.tile-label { margin-top: 10px; font-size: 0.95rem; font-weight: 600; }
 .tile-sub {
   margin-top: 6px;
   font-size: 0.82rem;
@@ -122,9 +106,7 @@ h1 {
   margin-bottom: 48px;
   box-shadow: var(--shadow);
 }
-
 .section-header { margin-bottom: 28px; }
-
 .section-header h2 {
   font-family: var(--serif);
   font-weight: 500;
@@ -132,7 +114,6 @@ h1 {
   margin: 0 0 8px;
   letter-spacing: -0.01em;
 }
-
 .section-header p {
   color: var(--text-muted);
   margin: 0;
@@ -146,12 +127,12 @@ h1 {
   align-items: flex-start;
 }
 
-/* ─── Fieldsets / input groups ─────────────────────────── */
+/* ─── Fieldsets ────────────────────────────────────────── */
 
 fieldset {
   border: none;
   padding: 0;
-  margin: 0 0 30px;
+  margin: 0 0 34px;
 }
 fieldset:last-child { margin-bottom: 0; }
 
@@ -167,12 +148,27 @@ fieldset legend {
   margin-bottom: 18px;
 }
 
+.subgroup-head {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  margin: 22px 0 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--border);
+}
+.subgroup-head:first-of-type { margin-top: 0; }
+
+/* ─── Input rows ───────────────────────────────────────── */
+
 .input-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
+.input-row.spaced { margin-bottom: 24px; }
 .input-row:last-child { margin-bottom: 0; }
 
 .input-row label {
@@ -202,13 +198,11 @@ fieldset legend {
 
 .control {
   display: grid;
-  grid-template-columns: 1fr 96px;
+  grid-template-columns: 1fr 100px;
   gap: 14px;
   align-items: center;
 }
-.control.single {
-  grid-template-columns: 1fr;
-}
+.control.single { grid-template-columns: 1fr; }
 
 input[type=range] {
   -webkit-appearance: none;
@@ -243,7 +237,7 @@ input[type=range]::-moz-range-thumb {
 input[type=number] {
   font-family: var(--sans);
   font-variant-numeric: tabular-nums;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
   padding: 6px 8px;
@@ -262,21 +256,23 @@ input[type=number]:focus {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin: 6px 0 0;
-  line-height: 1.45;
+  line-height: 1.5;
 }
-
 .caption {
-  padding-top: 6px;
+  padding-top: 4px;
   font-style: italic;
 }
+.caption.no-italic { font-style: normal; margin: 0 0 14px; padding-top: 0; }
 
-/* ─── A · Corpus scope (read-only) ─────────────────────── */
+/* ─── A · Corpus scope ─────────────────────────────────── */
 
 .scope-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  margin-bottom: 18px;
 }
+.scope-grid.one { grid-template-columns: 1fr; }
 
 .scope-item {
   background: var(--bg);
@@ -284,7 +280,6 @@ input[type=number]:focus {
   border-radius: 6px;
   padding: 14px 16px;
 }
-
 .scope-label {
   font-size: 0.76rem;
   text-transform: uppercase;
@@ -292,7 +287,6 @@ input[type=number]:focus {
   color: var(--text-muted);
   font-weight: 600;
 }
-
 .scope-value {
   font-family: var(--serif);
   font-size: 1.5rem;
@@ -302,7 +296,6 @@ input[type=number]:focus {
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
 }
-
 .scope-sub {
   margin-top: 4px;
   font-size: 0.78rem;
@@ -311,31 +304,124 @@ input[type=number]:focus {
   line-height: 1.4;
 }
 
-/* ─── B · OCR radio cards ──────────────────────────────── */
+/* ─── Preset chips under Corpus slider ─────────────────── */
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.preset {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.1s, border-color 0.1s;
+}
+.preset:hover { border-color: var(--accent); background: var(--accent-soft); }
+.preset.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+/* ─── B · Hardware card ────────────────────────────────── */
+
+.hardware-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.hw-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.hw-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.hw-price {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.hw-priceunit {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.hw-specs {
+  margin-top: 6px;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Inline readouts (fieldset-local) ─────────────────── */
+
+.readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+  flex-wrap: wrap;
+}
+.readout-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.readout-value {
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+}
+
+/* ─── C · OCR radio cards ──────────────────────────────── */
 
 .radio-cards {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
 .radio-card {
   display: grid;
   grid-template-columns: 22px 1fr;
   grid-template-rows: auto auto;
   gap: 4px 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
   background: var(--surface);
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
 }
-
-.radio-card:hover {
-  border-color: var(--accent);
-}
-
+.radio-card:hover { border-color: var(--accent); }
 .radio-card input[type=radio] {
   grid-row: 1 / span 2;
   grid-column: 1;
@@ -346,30 +432,19 @@ input[type=number]:focus {
   height: 16px;
   cursor: pointer;
 }
-
 .rc-head {
   grid-column: 2;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-
-.rc-name {
-  font-weight: 600;
-  font-size: 0.98rem;
-}
-
+.rc-name { font-weight: 600; font-size: 0.98rem; }
 .rc-stats {
   font-size: 0.85rem;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-
-.rc-stats strong {
-  color: var(--accent);
-  font-weight: 700;
-}
-
+.rc-stats strong { color: var(--accent); font-weight: 700; }
 .rc-desc {
   grid-column: 2;
   font-size: 0.83rem;
@@ -377,35 +452,48 @@ input[type=number]:focus {
   line-height: 1.5;
   margin-top: 4px;
 }
-
 .radio-card:has(input:checked) {
   border-color: var(--accent);
   background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-/* ─── E · Team composition summary ─────────────────────── */
+/* ─── F · Team composition ─────────────────────────────── */
 
-.team-summary {
-  margin-top: 8px;
-  padding: 14px 16px;
+.role-block {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--border-strong);
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 0 6px 6px 0;
+}
+.role-block:last-of-type { margin-bottom: 0; }
+
+.role-head {
+  font-size: 0.93rem;
+  font-weight: 600;
+  margin-bottom: 10px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.team-summary .ts-label {
-  color: var(--text-muted);
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0 0;
+  font-size: 0.88rem;
+  cursor: pointer;
 }
-
-.team-summary strong {
-  color: var(--accent);
-  font-weight: 700;
+.checkbox-row input[type=checkbox] {
+  margin-top: 3px;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
 }
 
 /* ─── Outputs (right column) ───────────────────────────── */
@@ -415,7 +503,6 @@ input[type=number]:focus {
   flex-direction: column;
   gap: 22px;
 }
-
 .sticky-col {
   position: sticky;
   top: 20px;
@@ -427,7 +514,6 @@ input[type=number]:focus {
   border-radius: 6px;
   padding: 18px 20px 16px;
 }
-
 .output-group.primary {
   background: var(--accent-soft);
   border-color: var(--accent);
@@ -444,7 +530,6 @@ input[type=number]:focus {
   border-bottom: 1px solid var(--border);
   margin-bottom: 14px;
 }
-
 .output-group.primary .output-group-heading {
   border-bottom-color: rgba(31, 58, 95, 0.25);
 }
@@ -462,7 +547,6 @@ input[type=number]:focus {
   font-weight: 700;
   font-family: var(--sans);
 }
-
 .og-sub {
   margin-left: auto;
   font-size: 0.74rem;
@@ -481,11 +565,11 @@ input[type=number]:focus {
 .output-group.primary .output-tile {
   border-bottom-color: rgba(31, 58, 95, 0.2);
 }
-
 .output-tile:last-of-type {
   border-bottom: none;
   padding-bottom: 6px;
 }
+.output-tile.subtotals { padding-top: 14px; }
 
 .output-label {
   font-size: 0.74rem;
@@ -505,11 +589,10 @@ input[type=number]:focus {
   color: var(--text);
 }
 
-/* Typographic hierarchy: Group 2 (FTE) dominates. */
 .output-value.sm-num { font-size: 1.55rem; }
 .output-value.lg-num { font-size: 1.85rem; }
 .output-value.xl-num {
-  font-size: 2.4rem;
+  font-size: 2.1rem;
   color: var(--accent-strong);
 }
 
@@ -518,7 +601,11 @@ input[type=number]:focus {
   font-size: 0.82rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-  line-height: 1.45;
+  line-height: 1.55;
+}
+.output-sub strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .breakdown-grid {
@@ -530,7 +617,6 @@ input[type=number]:focus {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
-
 .breakdown-grid strong {
   color: var(--text);
   font-weight: 600;
@@ -577,16 +663,12 @@ input[type=number]:focus {
 /* ─── Responsive ───────────────────────────────────────── */
 
 @media (max-width: 1040px) {
-  .calc-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
+  .calc-grid { grid-template-columns: 1fr; gap: 32px; }
   .sticky-col { position: static; top: auto; }
 }
 
 @media (max-width: 880px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .scope-grid { grid-template-columns: 1fr; gap: 10px; }
 }
 
 @media (max-width: 560px) {
@@ -601,8 +683,8 @@ input[type=number]:focus {
   .calculator { padding: 24px; }
   h1 { font-size: 1.8rem; }
   .tile-value { font-size: 2.1rem; }
-  .output-value.xl-num { font-size: 2rem; }
-  .output-value.lg-num { font-size: 1.6rem; }
+  .output-value.xl-num { font-size: 1.85rem; }
+  .output-value.lg-num { font-size: 1.55rem; }
   .output-value.sm-num { font-size: 1.35rem; }
   .control { grid-template-columns: 1fr 80px; }
 }

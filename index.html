@@ -39,84 +39,130 @@
   <section class="calculator" aria-label="Pipeline cost and resource model">
     <div class="section-header">
       <h2>Pipeline cost &amp; resource model</h2>
-      <p>Three OCR engines run in parallel; an LLM merges them into a consensus; a sampled fraction is human-verified through a 3-way-diff click-correct interface that also produces fine-tuning data. Adjust the parameters below to model the full 21-year envelope.</p>
+      <p>Open-weight vision-language models run on a single owned DGX Spark at the BBAW server room. LLM APIs are used selectively for disputed sentences and bibliographic extraction. Human effort is dominated by a fixed team doing daily QC-correction work, with effort decreasing once enough training data accumulates to deploy a fine-tuned local model.</p>
     </div>
 
     <div class="calc-grid">
       <div class="inputs">
 
+        <!-- ─── A · Corpus scope ─────────────────────────────── -->
         <fieldset>
           <legend>A · Corpus scope</legend>
-          <div class="scope-grid">
+          <div class="scope-grid one">
             <div class="scope-item">
-              <div class="scope-label">Total pages to process</div>
-              <div class="scope-value" id="scope-pages">10,801,340</div>
-              <div class="scope-sub">5.96 M ACO · 4.54 M ShamelaAY · 0.30 M other</div>
+              <div class="scope-label">Current corpus (Phase 1)</div>
+              <div class="scope-value">10.8 M pages</div>
+              <div class="scope-sub">ACO + ShamelaAY + personal collection · 29,908 records</div>
             </div>
-            <div class="scope-item">
-              <div class="scope-label">Total records</div>
-              <div class="scope-value" id="scope-records">29,908</div>
-              <div class="scope-sub">17,790 ACO · 11,578 ShamelaAY · 540 other</div>
+          </div>
+
+          <div class="input-row spaced">
+            <label for="corpus-size">Process pages across project lifetime
+              <span class="unit"><span id="corpus-size-val">25</span> M pages · ~<span id="corpus-records-val">69,444</span> records</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="corpus-size" min="5" max="100" step="1" value="25">
             </div>
-            <div class="scope-item">
-              <div class="scope-label">Estimated tokens</div>
-              <div class="scope-value" id="scope-tokens">~3.24 B</div>
-              <div class="scope-sub">At 300 tokens/page; actual range varies with script density.</div>
+            <div class="preset-row">
+              <button type="button" class="preset" data-target="corpus-size" data-value="10">10 M · Phase 1</button>
+              <button type="button" class="preset" data-target="corpus-size" data-value="15">15 M · + Waqfiyya</button>
+              <button type="button" class="preset" data-target="corpus-size" data-value="25">25 M · + HathiTrust core</button>
+              <button type="button" class="preset" data-target="corpus-size" data-value="50">50 M · full ambition</button>
             </div>
+            <p class="sub-label">Phase 1 is the current 10.8 M-page inventory. Phase 2 adds Maktaba al-Waqfiyya (~10 M raw, heavily deduplicated against Phase 1). Phase 3 negotiates a HathiTrust partnership (estimated several hundred thousand Arabic volumes; needs verification). Re-OCR via Chandra-2 produces dramatically better quality than HathiTrust's current Arabic OCR.</p>
           </div>
         </fieldset>
 
+        <!-- ─── B · Compute infrastructure ───────────────────── -->
         <fieldset>
-          <legend>B · OCR pipeline</legend>
-          <div class="radio-cards" role="radiogroup" aria-label="OCR pipeline path">
+          <legend>B · Compute infrastructure</legend>
 
-            <label class="radio-card">
-              <input type="radio" name="ocr-path" value="path1" checked>
-              <span class="rc-head">
-                <span class="rc-name">Datalab API consensus</span>
-                <span class="rc-stats"><strong>€5.50</strong> / 1,000 pages · <strong>~3,600</strong> pages/hr per instance</span>
-              </span>
-              <span class="rc-desc">Chandra @ Datalab (€4/1k) + Google Vision (€1.50/1k) + Mistral Batch (€1/1k). Three engines run in parallel; LLM merges to consensus. Throughput verified in Alicia González Martínez's October 2026 pipeline tests.</span>
+          <div class="hardware-card">
+            <div class="hw-head">
+              <div class="hw-name">1 × NVIDIA DGX Spark</div>
+              <div class="hw-price">€ 5,000 <span class="hw-priceunit">one-time hardware</span></div>
+            </div>
+            <div class="hw-specs">128 GB unified memory · Grace-Blackwell GB10 architecture · hosted at BBAW server room — electricity provided as institutional infrastructure (€0 recurring).</div>
+          </div>
+
+          <div class="input-row spaced">
+            <label for="dgx-throughput">Nominal throughput
+              <span class="unit"><span id="dgx-throughput-val">6</span> pages/sec</span>
             </label>
+            <div class="control single">
+              <input type="range" id="dgx-throughput" min="2" max="12" step="1" value="6">
+            </div>
+            <p class="sub-label">Depends on Chandra-2 FP4 quantization status. FP16 baseline ~2 pages/sec; FP4 via TensorRT-LLM ~6–8 pages/sec.</p>
+          </div>
 
-            <label class="radio-card">
-              <input type="radio" name="ocr-path" value="path2">
-              <span class="rc-head">
-                <span class="rc-name">Runpod self-host consensus</span>
-                <span class="rc-stats"><strong>€2.50</strong> / 1,000 pages · <strong>~5,200</strong> pages/hr per instance</span>
-              </span>
-              <span class="rc-desc">Chandra on Runpod H100 PCIe ($2.39/hr ≈ €2.05/hr; ~1.44 pages/sec ≈ 5,184 pages/hr) + Google Vision + Mistral. Lowest per-page cost; Chandra is the throughput bottleneck.</span>
-            </label>
-
-            <label class="radio-card">
-              <input type="radio" name="ocr-path" value="path3">
-              <span class="rc-head">
-                <span class="rc-name">Apple Silicon local</span>
-                <span class="rc-stats"><strong>€1.50</strong> / 1,000 pages · <strong>~55</strong> pages/hr per instance</span>
-              </span>
-              <span class="rc-desc">Chandra HuggingFace local on M-series Mac (observed 65.7 sec/page) + Google Vision + Mistral. Cheapest per page but glacially slow — used for development and verification, not production at scale.</span>
-            </label>
-
+          <div class="readout">
+            <span class="readout-label">OCR wall-clock at nominal throughput</span>
+            <span class="readout-value" id="b-wallclock">— days continuous</span>
           </div>
         </fieldset>
 
+        <!-- ─── C · OCR consensus strategy ───────────────────── -->
         <fieldset>
-          <legend>C · LLM post-processing</legend>
+          <legend>C · OCR consensus strategy</legend>
+          <p class="caption no-italic">Strategy is what runs on the DGX. All options are free per-page (owned hardware) and differ in accuracy and effective throughput.</p>
+
+          <div class="radio-cards" role="radiogroup" aria-label="OCR consensus strategy">
+
+            <label class="radio-card">
+              <input type="radio" name="ocr-strategy" value="self" checked>
+              <span class="rc-head">
+                <span class="rc-name">Chandra-2 self-consensus</span>
+                <span class="rc-stats"><strong>~99.5%</strong> accuracy · <strong>~6</strong> pages/sec single-model</span>
+              </span>
+              <span class="rc-desc">3× stochastic passes on the same model; vote on disputed sentences. Simplest pipeline. Default for Phase 1.</span>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="ocr-strategy" value="multi">
+              <span class="rc-head">
+                <span class="rc-name">Multi-model consensus</span>
+                <span class="rc-stats"><strong>~99.8%</strong> accuracy · <strong>~3</strong> pages/sec effective</span>
+              </span>
+              <span class="rc-desc">Chandra-2 + Qwen2.5-VL + InternVL3 in parallel. Higher accuracy; slower due to memory contention on a single DGX. Use once Phase 1 fine-tuning data accumulates.</span>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="ocr-strategy" value="finetuned">
+              <span class="rc-head">
+                <span class="rc-name">Fine-tuned local model</span>
+                <span class="rc-stats"><strong>~99.7%</strong> accuracy · <strong>~8</strong> pages/sec</span>
+              </span>
+              <span class="rc-desc">Single model post-Year 3, activated once the QC threshold (~50,000 verified pages) is reached. Calibrated on project-collected training pairs.</span>
+            </label>
+
+          </div>
+
+          <div class="readout">
+            <span class="readout-label">Selected strategy effective throughput</span>
+            <span class="readout-value" id="c-effective">— pages/sec</span>
+          </div>
+        </fieldset>
+
+        <!-- ─── D · LLM API usage ────────────────────────────── -->
+        <fieldset>
+          <legend>D · LLM API usage</legend>
 
           <div class="input-row">
-            <label for="llm-consensus">LLM consensus / merging <span class="unit">€ / page</span></label>
+            <label for="llm-consensus">Localized sentence consensus <span class="unit">€ / page</span></label>
             <div class="control">
-              <input type="range" id="llm-consensus" min="0.0001" max="0.010" step="0.0001" value="0.001">
-              <input type="number" id="llm-consensus-num" min="0" step="0.0001" value="0.0010">
+              <input type="range" id="llm-consensus" min="0.00001" max="0.005" step="0.00001" value="0.0001">
+              <input type="number" id="llm-consensus-num" min="0" step="0.00001" value="0.00010">
             </div>
+            <p class="sub-label">API called only for disputed sentences (~5% of pages). A cheap model (GPT-4o-mini or equivalent) picks the best variant.</p>
           </div>
 
           <div class="input-row">
-            <label for="llm-tagging">Structural tagging → mARkdown <span class="unit">€ / page</span></label>
+            <label for="llm-tagging">Header-coordinate structural tagging <span class="unit">€ / page</span></label>
             <div class="control">
-              <input type="range" id="llm-tagging" min="0.0001" max="0.010" step="0.0001" value="0.001">
-              <input type="number" id="llm-tagging-num" min="0" step="0.0001" value="0.0010">
+              <input type="range" id="llm-tagging" min="0.00001" max="0.005" step="0.00001" value="0.0001">
+              <input type="number" id="llm-tagging-num" min="0" step="0.00001" value="0.00010">
             </div>
+            <p class="sub-label">Output bounding-box coordinates for header lines only — ~20 tokens output per page vs ~350 for full tagged text.</p>
           </div>
 
           <div class="input-row">
@@ -125,82 +171,148 @@
               <input type="range" id="llm-biblio" min="0.0005" max="0.030" step="0.0005" value="0.003">
               <input type="number" id="llm-biblio-num" min="0" step="0.0005" value="0.0030">
             </div>
+            <p class="sub-label">One-time per record. Defaults to Haiku 4.5 batch pricing.</p>
           </div>
 
-          <p class="caption">Defaults assume Haiku 4.5 batch pricing (~$1/MTok input, $5/MTok output, 50% batch discount). Consensus and tagging are well-defined operations that don't require Sonnet-class reasoning. Move sliders up to model Sonnet-class costs if higher accuracy is desired for specific steps.</p>
+          <p class="caption">API usage is intentionally minimized: open-weight models on owned hardware handle bulk OCR; APIs are invoked only for disputed sentences and bibliographic extraction. Verifies the "low marginal cost across project lifetime" principle.</p>
         </fieldset>
 
+        <!-- ─── E · Fine-tuning runs ─────────────────────────── -->
         <fieldset>
-          <legend>D · Verification &amp; validation</legend>
+          <legend>E · Fine-tuning runs</legend>
 
           <div class="input-row">
-            <label for="qc-sample">QC sampling rate <span class="unit">% of pages verified</span></label>
-            <div class="control">
-              <input type="range" id="qc-sample" min="1" max="100" step="1" value="10">
-              <input type="number" id="qc-sample-num" min="1" max="100" step="1" value="10">
+            <label for="ft-runs">Fine-tuning runs across project
+              <span class="unit"><span id="ft-runs-val">6</span> runs</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="ft-runs" min="1" max="20" step="1" value="6">
             </div>
+            <p class="sub-label">Iterative LoRA fine-tunes as QC training data accumulates.</p>
           </div>
 
           <div class="input-row">
-            <label for="qc-time">Time per verified page <span class="unit">seconds</span></label>
-            <div class="control">
-              <input type="range" id="qc-time" min="5" max="180" step="5" value="30">
-              <input type="number" id="qc-time-num" min="5" max="180" step="5" value="30">
+            <label for="ft-cost">Cost per fine-tuning run
+              <span class="unit">€ <span id="ft-cost-val">0</span></span>
+            </label>
+            <div class="control single">
+              <input type="range" id="ft-cost" min="0" max="500" step="50" value="0">
             </div>
-            <p class="sub-label">3-way diff with single-click correction; verified output feeds fine-tuning data for the local Chandra model.</p>
-          </div>
-
-          <div class="input-row">
-            <label for="parallel">Parallel OCR instances <span class="unit">copies of pipeline</span></label>
-            <div class="control">
-              <input type="range" id="parallel" min="1" max="32" step="1" value="4">
-              <input type="number" id="parallel-num" min="1" max="32" step="1" value="4">
-            </div>
-            <p class="sub-label">How many copies of the pipeline run in parallel.</p>
+            <p class="sub-label">Free if executed on academic clusters (likely path). Add cost for cloud burst alternative (e.g., €200–500/run on rented H100).</p>
           </div>
         </fieldset>
 
+        <!-- ─── F · Team composition ─────────────────────────── -->
         <fieldset>
-          <legend>E · Team composition</legend>
+          <legend>F · Team composition</legend>
 
-          <div class="input-row">
-            <label for="dh-intensive">
-              DH developer, years 1–3 <span class="role-note">intensive development</span>
-              <span class="unit"><span id="dh-intensive-val">100</span>%</span>
-            </label>
-            <div class="control single">
-              <input type="range" id="dh-intensive" min="50" max="100" step="5" value="100">
+          <h4 class="subgroup-head">F.1 · Core academic positions</h4>
+
+          <div class="role-block">
+            <div class="role-head">Project leader (PI) <span class="role-note">years 1–21, constant FTE</span></div>
+            <div class="input-row">
+              <label for="pl-hours">OCR-correction time per day
+                <span class="unit"><span id="pl-hours-val">1.0</span> hr/day</span>
+              </label>
+              <div class="control single">
+                <input type="range" id="pl-hours" min="0" max="4" step="0.5" value="1">
+              </div>
+              <p class="sub-label">Project leader includes OCR data correction in daily workflow.</p>
             </div>
           </div>
 
-          <div class="input-row">
-            <label for="dh-maintenance">
-              DH developer, years 4–21 <span class="role-note">maintenance</span>
-              <span class="unit"><span id="dh-maintenance-val">30</span>%</span>
-            </label>
-            <div class="control single">
-              <input type="range" id="dh-maintenance" min="0" max="100" step="5" value="30">
+          <div class="role-block">
+            <div class="role-head">2 × DH Arabic postdocs <span class="role-note">intensive Y1–3 (100% each), fractional Y4–21</span></div>
+            <div class="input-row">
+              <label for="postdoc-maint">Maintenance FTE (years 4–21)
+                <span class="unit"><span id="postdoc-maint-val">20</span>%</span>
+              </label>
+              <div class="control single">
+                <input type="range" id="postdoc-maint" min="0" max="100" step="10" value="20">
+              </div>
+            </div>
+            <div class="input-row">
+              <label for="postdoc-hours">OCR-correction time per day during active years
+                <span class="unit"><span id="postdoc-hours-val">1.5</span> hr/day</span>
+              </label>
+              <div class="control single">
+                <input type="range" id="postdoc-hours" min="0" max="4" step="0.5" value="1.5">
+              </div>
             </div>
           </div>
 
-          <div class="input-row">
-            <label for="validation-pct">
-              Validation specialist, years 1–21 <span class="role-note">steady state</span>
-              <span class="unit"><span id="validation-val">30</span>%</span>
-            </label>
-            <div class="control single">
-              <input type="range" id="validation-pct" min="0" max="100" step="5" value="30">
+          <div class="role-block">
+            <div class="role-head">PhD position <span class="role-note">4 years fixed · standard German PhD funding</span></div>
+            <div class="input-row">
+              <label for="phd-start">Start year
+                <span class="unit">Year <span id="phd-start-val">4</span></span>
+              </label>
+              <div class="control single">
+                <input type="range" id="phd-start" min="1" max="10" step="1" value="4">
+              </div>
+            </div>
+            <div class="input-row">
+              <label for="phd-hours">OCR-correction time per day
+                <span class="unit"><span id="phd-hours-val">1.0</span> hr/day</span>
+              </label>
+              <div class="control single">
+                <input type="range" id="phd-hours" min="0" max="4" step="0.5" value="1">
+              </div>
             </div>
           </div>
 
-          <div class="team-summary">
-            <div><span class="ts-label">DH developer total:</span> <strong id="dh-total">8.4</strong> person-years</div>
-            <div><span class="ts-label">Validation specialist total:</span> <strong id="val-total">6.3</strong> person-years</div>
+          <h4 class="subgroup-head">F.2 · Student assistants (SHK / WHK)</h4>
+
+          <div class="input-row">
+            <label for="num-students">Concurrent student assistants
+              <span class="unit"><span id="num-students-val">2</span></span>
+            </label>
+            <div class="control single">
+              <input type="range" id="num-students" min="0" max="6" step="1" value="2">
+            </div>
           </div>
+          <div class="input-row">
+            <label for="student-hours">Hours per week per student
+              <span class="unit"><span id="student-hours-val">10</span> hr/week</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="student-hours" min="5" max="20" step="5" value="10">
+            </div>
+          </div>
+          <p class="sub-label">Student assistants do primary OCR-correction work; counted separately because BBAW uses a different tariff (SHK rate, not TV-L).</p>
+
+          <h4 class="subgroup-head">F.3 · Fine-tuning threshold automation</h4>
+
+          <div class="readout">
+            <span class="readout-label">Total team correction throughput</span>
+            <span class="readout-value" id="team-throughput">— pages/day · — pages/year</span>
+          </div>
+
+          <div class="input-row spaced">
+            <label for="ft-threshold">Threshold for fine-tuning activation
+              <span class="unit"><span id="ft-threshold-val">50,000</span> verified pages</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="ft-threshold" min="10000" max="200000" step="10000" value="50000">
+            </div>
+          </div>
+
+          <div class="readout">
+            <span class="readout-label">Threshold reached in</span>
+            <span class="readout-value" id="threshold-year-readout">Year —</span>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="model-reduction" checked>
+            <span>Model post-threshold reduction in correction time (80% drop after threshold year)</span>
+          </label>
+
+          <p class="caption">Once the fine-tuning threshold is reached, Option 3 (fine-tuned local model) becomes viable. Correction effort post-threshold drops by 80% — verification becomes spot-checking, not error-correction.</p>
         </fieldset>
 
       </div>
 
+      <!-- ─── Outputs (sticky right column) ──────────────────── -->
       <aside class="outputs sticky-col" aria-label="Computed outputs">
 
         <div class="output-group">
@@ -210,45 +322,70 @@
             <span class="og-sub">euros only</span>
           </div>
 
-          <div class="output-tile mid">
-            <div class="output-label">Total API &amp; compute</div>
-            <div class="output-value sm-num" id="total-api-cost">€ —</div>
-            <div class="breakdown-grid">
-              <span>OCR pipeline</span><strong id="cost-ocr">€ —</strong>
-              <span>LLM consensus</span><strong id="cost-consensus">€ —</strong>
-              <span>Structural tagging</span><strong id="cost-tagging">€ —</strong>
-              <span>Bibliographic extraction</span><strong id="cost-biblio">€ —</strong>
-            </div>
-            <p class="og-note">The only category that converts to money at proposal stage.</p>
+          <div class="output-tile">
+            <div class="output-label">Hardware (one-time)</div>
+            <div class="output-value sm-num">€ 5,000</div>
+            <div class="output-sub">1 × NVIDIA DGX Spark</div>
           </div>
+
+          <div class="output-tile">
+            <div class="output-label">Operational across project</div>
+            <div class="output-value sm-num" id="cost-operational">€ —</div>
+            <div class="breakdown-grid">
+              <span>LLM API total</span><strong id="cost-llm">€ —</strong>
+              <span>Fine-tuning runs</span><strong id="cost-ft">€ —</strong>
+            </div>
+          </div>
+
+          <div class="output-tile">
+            <div class="output-label">Total project compute envelope</div>
+            <div class="output-value lg-num" id="total-envelope">€ —</div>
+            <div class="output-sub" id="envelope-sub">Across — pages over 21-year project</div>
+          </div>
+
+          <p class="og-note">Electricity provided as BBAW institutional infrastructure (€0). API and fine-tuning are the only recurring money lines.</p>
         </div>
 
         <div class="output-group primary">
           <div class="output-group-heading">
             <span class="og-num">2</span>
             <span>Human time</span>
-            <span class="og-sub">reported in FTE, not in euros</span>
-          </div>
-
-          <div class="output-tile xl">
-            <div class="output-label">DH developer total</div>
-            <div class="output-value xl-num" id="dh-py">— PY</div>
-            <div class="output-sub" id="dh-py-sub">≈ — person-months</div>
-          </div>
-
-          <div class="output-tile xl">
-            <div class="output-label">Validation specialist total</div>
-            <div class="output-value xl-num" id="val-py">— PY</div>
-            <div class="output-sub" id="val-py-sub">≈ — person-months</div>
+            <span class="og-sub">FTE, not euros</span>
           </div>
 
           <div class="output-tile">
-            <div class="output-label">QC verification</div>
-            <div class="output-value lg-num" id="qc-hrs">— FTE-hours</div>
-            <div class="output-sub"><span id="qc-fte-years">— FTE-years</span> · at sampling rate × time per page, distributed across project years</div>
+            <div class="output-label">Project leader (PI)</div>
+            <div class="output-value xl-num" id="pl-py">— PY</div>
+            <div class="output-sub">OCR-correction allocation across 21 years</div>
           </div>
 
-          <p class="og-note">Per Akademie convention, human time is reported in FTE; conversion to budget happens at BBAW review via TV-L salary tables.</p>
+          <div class="output-tile">
+            <div class="output-label">DH Arabic postdocs (×2)</div>
+            <div class="output-value xl-num" id="postdoc-py">— PY</div>
+            <div class="output-sub">intensive (Y1–3, 100%) + maintenance (Y4–21)</div>
+          </div>
+
+          <div class="output-tile">
+            <div class="output-label">PhD position</div>
+            <div class="output-value xl-num">4.0 PY</div>
+            <div class="output-sub">fixed — standard German PhD</div>
+          </div>
+
+          <div class="output-tile">
+            <div class="output-label">Student assistants</div>
+            <div class="output-value lg-num" id="student-shk">— SHK-yrs</div>
+            <div class="output-sub">separately tariffed (SHK rate, not TV-L)</div>
+          </div>
+
+          <div class="output-tile subtotals">
+            <div class="output-label">Subtotals</div>
+            <div class="output-sub">
+              Senior academic FTE: <strong id="senior-py">—</strong> PY<br>
+              Student-assistant time: <strong id="total-shk">—</strong> SHK-years
+            </div>
+          </div>
+
+          <p class="og-note">Per Akademie convention, human time is reported in FTE; conversion to budget happens at BBAW review via TV-L salary tables (academic positions) and SHK hourly tariff.</p>
         </div>
 
         <div class="output-group">
@@ -257,23 +394,29 @@
             <span>Schedule</span>
           </div>
 
-          <div class="output-tile mid">
+          <div class="output-tile">
             <div class="output-label">OCR processing wall-clock</div>
-            <div class="output-value sm-num" id="ocr-wall">— hours</div>
-            <div class="output-sub" id="ocr-wall-sub">— days · — weeks</div>
+            <div class="output-value sm-num" id="ocr-wall">— days</div>
+            <div class="output-sub" id="ocr-wall-sub">continuous, selected strategy</div>
           </div>
 
-          <div class="output-tile mid">
+          <div class="output-tile">
+            <div class="output-label">Fine-tuning threshold reached</div>
+            <div class="output-value sm-num" id="threshold-out">Year —</div>
+            <div class="output-sub">computed from team correction throughput</div>
+          </div>
+
+          <div class="output-tile">
             <div class="output-label">Full project duration</div>
             <div class="output-value sm-num">21 years</div>
-            <div class="output-sub">Fixed — this is an Akademie Vorhaben.</div>
+            <div class="output-sub">Akademie Vorhaben standard</div>
           </div>
         </div>
 
       </aside>
     </div>
 
-    <p class="note">OCR throughput figures are derived from limited test runs (Alicia González Martínez, October 2026) and vendor-published benchmarks for Datalab, Google Cloud Vision, and Mistral OCR. LLM pricing assumes Anthropic Sonnet/Haiku rates for consensus merging and structural tagging. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. ShamelaAY records are from the Shamela digital library.</p>
+    <p class="note">OCR pipeline architecture: open-weight vision-language models (Chandra-2, Qwen2.5-VL, InternVL3) deployed locally on owned hardware. Phase 1 infrastructure is a single NVIDIA DGX Spark (Grace-Blackwell, 128 GB unified memory; ~€5,000 hardware investment, hosted at BBAW server room as institutional infrastructure). Models are run in self-consensus mode (same model, multiple stochastic passes) and cross-model consensus, voting on disputed sentences only. LLM API access is used selectively for localized consensus resolution and header-coordinate detection (~€2,000 across the project lifetime). The 3-way diff verification interface simultaneously serves three purposes: quality assurance, generation of (image, text) training pairs in EIS1600 mARkdown format, and iterative fine-tuning of open-weight models calibrated for classical Arabic typography. Header and poetry structural tags are explicitly captured as primary annotation targets, supporting downstream computational analysis. Fine-tuning runs are executed on owned hardware or via no-cost academic compute clusters. By Phase 2, fine-tuned local models are projected to handle the majority of pages without consensus, reducing per-page processing time by 5–10× and producing a redistributable Arabic-OCR model as a public research output. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. ShamelaAY records are from the Shamela digital library. HathiTrust integration is planned for Phase 3 via direct partnership negotiation.</p>
   </section>
 
   <footer class="page-footer">

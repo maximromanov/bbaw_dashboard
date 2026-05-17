@@ -1,100 +1,182 @@
-// Hardcoded corpus constants. These match the headline tiles and the values
-// produced by data/corpus_merged.json; if that file changes, update here.
-// (Future enhancement: fetch() data/corpus_merged.json and recompute live.)
+// Phase 1 corpus baseline. The corpus-size slider drives all live calculations;
+// this constant exists for the read-only "Current corpus (Phase 1)" tile and
+// the records-per-page average derived from it.
+// (Future enhancement: fetch() data/corpus_merged.json to verify these.)
 const CORPUS = {
-  pages: 10801340,
-  records: 29908,
-  tokensPerPage: 300,
+  pages:   10_801_340,
+  records: 29_908,
+  pagesPerRecord: 360,        // ≈ 10.8M / 30k; used to scale records with corpus size
 };
 
 const PROJECT_YEARS         = 21;
-const DEV_YEARS_INTENSIVE   = 3;     // years 1–3
-const DEV_YEARS_MAINTENANCE = 18;    // years 4–21
-const HOURS_PER_WORKDAY     = 8;
+const DEV_YEARS_INTENSIVE   = 3;
+const DEV_YEARS_MAINTENANCE = PROJECT_YEARS - DEV_YEARS_INTENSIVE;
+const HOURS_PER_FTE_DAY     = 8;
 const WORKDAYS_PER_YEAR     = 220;
+const FULL_TIME_HOURS_WEEK  = 40;
+const SECONDS_PER_DAY       = 86_400;
 
-const OCR_PATHS = {
-  path1: { label: 'Datalab API consensus',      eurPer1k: 5.50, pagesPerHour: 3600 },
-  path2: { label: 'Runpod self-host consensus', eurPer1k: 2.50, pagesPerHour: 5200 },
-  path3: { label: 'Apple Silicon local',        eurPer1k: 1.50, pagesPerHour: 55   },
+// Pages per FTE-day (8 h) when an experienced reviewer is doing 3-way-diff
+// click-correction. The threshold-year sanity-check in the spec uses this rate.
+const CORRECTION_PAGES_PER_FTE_DAY = 120;
+
+// Strategy multipliers applied to the DGX nominal throughput.
+//   self-consensus: 3 stochastic passes batched on one model → ≈1.0× nominal
+//   multi-model:    3 VLMs contending for memory               → ≈0.5× nominal
+//   fine-tuned:     single smaller, calibrated model           → ≈1.33× nominal
+// At the default 6 pages/sec this yields 6 / 3 / 8 pages/sec respectively.
+const STRATEGY_MULT = {
+  self:      1.0,
+  multi:     0.5,
+  finetuned: 1.333,
 };
 
 const fmt = {
-  int: new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }),
-  one: new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }),
+  int:  new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }),
+  one:  new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }),
+  two:  new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }),
+  four: new Intl.NumberFormat('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 5 }),
 };
 
 const $    = (id) => document.getElementById(id);
 const euro = (v)  => '€ ' + fmt.int.format(Math.round(v));
 
-function selectedPath() {
-  const el = document.querySelector('input[name="ocr-path"]:checked');
-  return OCR_PATHS[el ? el.value : 'path1'];
+function selectedStrategy() {
+  const el = document.querySelector('input[name="ocr-strategy"]:checked');
+  return el ? el.value : 'self';
 }
 
 function compute() {
-  const path = selectedPath();
-
   // ── Inputs ──────────────────────────────────────────────
+  const corpusM     = parseFloat($('corpus-size').value) || 0;
+  const corpusPages = corpusM * 1_000_000;
+  const corpusRecs  = corpusPages / CORPUS.pagesPerRecord;
+
+  const dgxNom      = parseFloat($('dgx-throughput').value) || 1;
+  const strategy    = selectedStrategy();
+  const strategyMul = STRATEGY_MULT[strategy];
+  const effThru     = dgxNom * strategyMul;
+
   const consensus   = parseFloat($('llm-consensus').value) || 0;
   const tagging     = parseFloat($('llm-tagging').value)   || 0;
   const biblio      = parseFloat($('llm-biblio').value)    || 0;
 
-  const qcPct       = parseFloat($('qc-sample').value) || 0;
-  const qcSeconds   = parseFloat($('qc-time').value)   || 0;
-  const parallel    = Math.max(1, parseInt($('parallel').value, 10) || 1);
+  const ftRuns      = parseInt($('ft-runs').value, 10) || 0;
+  const ftCost      = parseFloat($('ft-cost').value)   || 0;
 
-  const dhIntensive   = parseFloat($('dh-intensive').value)   || 0;
-  const dhMaintenance = parseFloat($('dh-maintenance').value) || 0;
-  const validationPct = parseFloat($('validation-pct').value) || 0;
+  const plHrs       = parseFloat($('pl-hours').value)       || 0;
+  const postdocMain = parseFloat($('postdoc-maint').value)  || 0;
+  const postdocHrs  = parseFloat($('postdoc-hours').value)  || 0;
+  const phdStart    = parseInt($('phd-start').value, 10)    || 1;
+  const phdHrs      = parseFloat($('phd-hours').value)      || 0;
+  const nStudents   = parseInt($('num-students').value, 10) || 0;
+  const studentHW   = parseFloat($('student-hours').value)  || 0;
+  const ftThreshold = parseInt($('ft-threshold').value, 10) || 0;
+  // const reduction = $('model-reduction').checked;  // exposed but doesn't feed any output number
 
-  // Mirror team % into the labels
-  $('dh-intensive-val').textContent   = fmt.int.format(dhIntensive);
-  $('dh-maintenance-val').textContent = fmt.int.format(dhMaintenance);
-  $('validation-val').textContent     = fmt.int.format(validationPct);
+  // ── Mirror slider values back into labels ───────────────
+  $('corpus-size-val').textContent     = fmt.int.format(corpusM);
+  $('corpus-records-val').textContent  = fmt.int.format(Math.round(corpusRecs));
+  $('dgx-throughput-val').textContent  = fmt.int.format(dgxNom);
+  $('ft-runs-val').textContent         = fmt.int.format(ftRuns);
+  $('ft-cost-val').textContent         = fmt.int.format(ftCost);
+  $('pl-hours-val').textContent        = fmt.one.format(plHrs);
+  $('postdoc-maint-val').textContent   = fmt.int.format(postdocMain);
+  $('postdoc-hours-val').textContent   = fmt.one.format(postdocHrs);
+  $('phd-start-val').textContent       = fmt.int.format(phdStart);
+  $('phd-hours-val').textContent       = fmt.one.format(phdHrs);
+  $('num-students-val').textContent    = fmt.int.format(nStudents);
+  $('student-hours-val').textContent   = fmt.int.format(studentHW);
+  $('ft-threshold-val').textContent    = fmt.int.format(ftThreshold);
+
+  // ── Preset chip highlight ───────────────────────────────
+  document.querySelectorAll('.preset[data-target="corpus-size"]').forEach((btn) => {
+    btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === corpusM);
+  });
 
   // ── 1 · Monetary costs (€) ──────────────────────────────
-  const ocrCost      = CORPUS.pages * (path.eurPer1k / 1000);
-  const consensusEUR = CORPUS.pages   * consensus;
-  const taggingEUR   = CORPUS.pages   * tagging;
-  const biblioEUR    = CORPUS.records * biblio;
-  const apiTotal     = ocrCost + consensusEUR + taggingEUR + biblioEUR;
+  const hardwareEUR = 5_000;
+  const llmEUR      = corpusPages * (consensus + tagging) + corpusRecs * biblio;
+  const ftEUR       = ftRuns * ftCost;
+  const operational = llmEUR + ftEUR;
+  const envelope    = hardwareEUR + operational;
 
-  $('total-api-cost').textContent = euro(apiTotal);
-  $('cost-ocr').textContent       = euro(ocrCost);
-  $('cost-consensus').textContent = euro(consensusEUR);
-  $('cost-tagging').textContent   = euro(taggingEUR);
-  $('cost-biblio').textContent    = euro(biblioEUR);
+  $('cost-llm').textContent         = euro(llmEUR);
+  $('cost-ft').textContent          = euro(ftEUR);
+  $('cost-operational').textContent = euro(operational);
+  $('total-envelope').textContent   = euro(envelope);
+  $('envelope-sub').textContent =
+    `Across ${fmt.int.format(corpusPages)} pages (~${fmt.int.format(Math.round(corpusRecs))} records) over 21-year project`;
 
-  // ── 2 · Human time (FTE — never converted to €) ─────────
-  const dhPY  = DEV_YEARS_INTENSIVE   * (dhIntensive   / 100)
-              + DEV_YEARS_MAINTENANCE * (dhMaintenance / 100);
-  const valPY = PROJECT_YEARS * (validationPct / 100);
+  // ── 2 · Human time (FTE) ────────────────────────────────
+  const plPY      = PROJECT_YEARS * (plHrs / HOURS_PER_FTE_DAY);
+  const postdocPY = DEV_YEARS_INTENSIVE   * 1.0 * 2
+                  + DEV_YEARS_MAINTENANCE * (postdocMain / 100) * 2;
+  const phdPY     = 4;
+  const studentSHK = nStudents * (studentHW / FULL_TIME_HOURS_WEEK) * PROJECT_YEARS;
 
-  const qcPages    = CORPUS.pages * (qcPct / 100);
-  const qcHours    = qcPages * (qcSeconds / 3600);
-  const qcFTEYears = qcHours / (HOURS_PER_WORKDAY * WORKDAYS_PER_YEAR);
+  const seniorPY = plPY + postdocPY + phdPY;
 
-  $('dh-py').textContent      = fmt.one.format(dhPY)  + ' PY';
-  $('val-py').textContent     = fmt.one.format(valPY) + ' PY';
-  $('dh-py-sub').textContent  = '≈ ' + fmt.int.format(Math.round(dhPY  * 12)) + ' person-months';
-  $('val-py-sub').textContent = '≈ ' + fmt.int.format(Math.round(valPY * 12)) + ' person-months';
+  $('pl-py').textContent      = fmt.one.format(plPY)      + ' PY';
+  $('postdoc-py').textContent = fmt.one.format(postdocPY) + ' PY';
+  $('student-shk').textContent = fmt.one.format(studentSHK) + ' SHK-yrs';
+  $('senior-py').textContent   = fmt.one.format(seniorPY);
+  $('total-shk').textContent   = fmt.one.format(studentSHK);
 
-  $('qc-hrs').textContent      = fmt.int.format(Math.round(qcHours)) + ' FTE-hours';
-  $('qc-fte-years').textContent = '≈ ' + fmt.one.format(qcFTEYears) + ' FTE-years';
+  // ── Team correction throughput & threshold year ─────────
+  // Pages-per-day total OCR-correction throughput.
+  // Sums daily correction hours across roles, converts to FTE-day equivalents
+  // (÷ HOURS_PER_FTE_DAY), then multiplies by the per-FTE-day correction rate.
+  // (Matches the proposal sanity-check arithmetic: 9 h/day → 1.125 FTE-days → 135 pages/day.)
+  const studentHrsDay = nStudents * studentHW / 5;  // 5-day workweek
+  const totalCorrHrsDay = plHrs + 2 * postdocHrs + phdHrs + studentHrsDay;
+  const pagesPerDay  = (totalCorrHrsDay / HOURS_PER_FTE_DAY) * CORRECTION_PAGES_PER_FTE_DAY;
+  const pagesPerYear = pagesPerDay * WORKDAYS_PER_YEAR;
 
-  $('dh-total').textContent  = fmt.one.format(dhPY);
-  $('val-total').textContent = fmt.one.format(valPY);
+  $('team-throughput').textContent = pagesPerYear > 0
+    ? `${fmt.int.format(Math.round(pagesPerDay))} pages/day · ${fmt.int.format(Math.round(pagesPerYear))} pages/year`
+    : '— · —';
 
-  // ── 3 · Schedule (wall-clock) ───────────────────────────
-  const wallHours = CORPUS.pages / (path.pagesPerHour * parallel);
-  const wallDays  = wallHours / 24;
-  const wallWeeks = wallDays / 7;
+  let thresholdYrLabel, thresholdOutLabel;
+  if (pagesPerYear <= 0) {
+    thresholdYrLabel = thresholdOutLabel = 'not reached (no correction work)';
+  } else {
+    const yrsExact = ftThreshold / pagesPerYear;
+    if (yrsExact > PROJECT_YEARS) {
+      thresholdYrLabel = thresholdOutLabel = `not reached within 21 years (${fmt.one.format(yrsExact)} yrs)`;
+    } else {
+      const yrInt = Math.max(1, Math.ceil(yrsExact));
+      thresholdYrLabel  = `Year ${yrInt}`;
+      thresholdOutLabel = `Year ${yrInt} · ~${fmt.one.format(yrsExact)} yrs from start`;
+    }
+  }
+  $('threshold-year-readout').textContent = thresholdYrLabel;
+  $('threshold-out').textContent          = thresholdOutLabel;
 
-  $('ocr-wall').textContent     = fmt.int.format(Math.round(wallHours)) + ' hours';
+  // ── 3 · Schedule ────────────────────────────────────────
+  const wallSecs   = effThru > 0 ? corpusPages / effThru : Infinity;
+  const wallHrs    = wallSecs / 3600;
+  const wallDays   = wallSecs / SECONDS_PER_DAY;
+
+  const nominalSecs = dgxNom > 0 ? corpusPages / dgxNom : Infinity;
+  const nominalDays = nominalSecs / SECONDS_PER_DAY;
+
+  $('b-wallclock').textContent =
+    `${fmt.one.format(nominalDays)} days continuous`;
+  $('c-effective').textContent =
+    `${fmt.one.format(effThru)} pages/sec`;
+  $('ocr-wall').textContent =
+    `${fmt.one.format(wallDays)} days`;
   $('ocr-wall-sub').textContent =
-    `${fmt.one.format(wallDays)} days · ${fmt.one.format(wallWeeks)} weeks · `
-    + `${parallel} parallel × ${fmt.int.format(path.pagesPerHour)} pages/hr (continuous run)`;
+    `${fmt.int.format(Math.round(wallHrs))} hours continuous, ${fmt.one.format(effThru)} pages/sec effective (${strategyLabel(strategy)})`;
+}
+
+function strategyLabel(s) {
+  return ({
+    self:      'self-consensus',
+    multi:     'multi-model consensus',
+    finetuned: 'fine-tuned local',
+  })[s] || s;
 }
 
 // ── Wire up slider ↔ number-input pairs ───────────────────
@@ -109,19 +191,32 @@ function pair(sliderId, numberId) {
   ['llm-consensus', 'llm-consensus-num'],
   ['llm-tagging',   'llm-tagging-num'],
   ['llm-biblio',    'llm-biblio-num'],
-  ['qc-sample',     'qc-sample-num'],
-  ['qc-time',       'qc-time-num'],
-  ['parallel',      'parallel-num'],
 ].forEach(([s, n]) => pair(s, n));
 
-// Single-slider rows (team composition)
-['dh-intensive', 'dh-maintenance', 'validation-pct'].forEach((id) => {
+// Single-slider inputs (no paired number box)
+[
+  'corpus-size', 'dgx-throughput',
+  'ft-runs', 'ft-cost',
+  'pl-hours', 'postdoc-maint', 'postdoc-hours',
+  'phd-start', 'phd-hours',
+  'num-students', 'student-hours',
+  'ft-threshold',
+].forEach((id) => {
   $(id).addEventListener('input', compute);
 });
 
-// OCR path radio
-document.querySelectorAll('input[name="ocr-path"]').forEach((r) => {
+// Strategy radio + reduction checkbox
+document.querySelectorAll('input[name="ocr-strategy"]').forEach((r) => {
   r.addEventListener('change', compute);
+});
+$('model-reduction').addEventListener('change', compute);
+
+// Corpus-size preset chips
+document.querySelectorAll('.preset[data-target="corpus-size"]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    $('corpus-size').value = btn.dataset.value;
+    compute();
+  });
 });
 
 compute();
