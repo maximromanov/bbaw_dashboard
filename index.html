@@ -106,28 +106,28 @@
           <div class="input-row">
             <label for="llm-consensus">LLM consensus / merging <span class="unit">€ / page</span></label>
             <div class="control">
-              <input type="range" id="llm-consensus" min="0.001" max="0.02" step="0.001" value="0.005">
-              <input type="number" id="llm-consensus-num" min="0" step="0.001" value="0.005">
+              <input type="range" id="llm-consensus" min="0.0001" max="0.010" step="0.0001" value="0.001">
+              <input type="number" id="llm-consensus-num" min="0" step="0.0001" value="0.0010">
             </div>
           </div>
 
           <div class="input-row">
             <label for="llm-tagging">Structural tagging → mARkdown <span class="unit">€ / page</span></label>
             <div class="control">
-              <input type="range" id="llm-tagging" min="0.001" max="0.02" step="0.001" value="0.005">
-              <input type="number" id="llm-tagging-num" min="0" step="0.001" value="0.005">
+              <input type="range" id="llm-tagging" min="0.0001" max="0.010" step="0.0001" value="0.001">
+              <input type="number" id="llm-tagging-num" min="0" step="0.0001" value="0.0010">
             </div>
           </div>
 
           <div class="input-row">
             <label for="llm-biblio">Bibliographic extraction <span class="unit">€ / record</span></label>
             <div class="control">
-              <input type="range" id="llm-biblio" min="0.001" max="0.1" step="0.001" value="0.01">
-              <input type="number" id="llm-biblio-num" min="0" step="0.001" value="0.01">
+              <input type="range" id="llm-biblio" min="0.0005" max="0.030" step="0.0005" value="0.003">
+              <input type="number" id="llm-biblio-num" min="0" step="0.0005" value="0.0030">
             </div>
           </div>
 
-          <p class="caption">Defaults based on Sonnet/Haiku token math at ~300 tokens/page input.</p>
+          <p class="caption">Defaults assume Haiku 4.5 batch pricing (~$1/MTok input, $5/MTok output, 50% batch discount). Consensus and tagging are well-defined operations that don't require Sonnet-class reasoning. Move sliders up to model Sonnet-class costs if higher accuracy is desired for specific steps.</p>
         </fieldset>
 
         <fieldset>
