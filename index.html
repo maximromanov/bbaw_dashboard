@@ -10,7 +10,7 @@
   <header class="page-header">
     <p class="eyebrow">BBAW Akademie · Proposal Companion</p>
     <h1>Invisible Authorship in the Global Arabic Written Tradition</h1>
-    <p class="subtitle">Phase 1 corpus statistics and budget projection</p>
+    <p class="subtitle">Corpus statistics, pipeline cost, and team-resource model</p>
   </header>
 
   <section class="stats" aria-label="Headline corpus statistics">
@@ -36,98 +36,248 @@
     </article>
   </section>
 
-  <section class="calculator" aria-label="Cost calculator">
+  <section class="calculator" aria-label="Pipeline cost and resource model">
     <div class="section-header">
-      <h2>Phase 1 budget projection</h2>
-      <p>Adjust parameters to model OCR, LLM, and human-QC cost envelopes for the full corpus. Outputs update in real time; all values in euros.</p>
+      <h2>Pipeline cost &amp; resource model</h2>
+      <p>Three OCR engines run in parallel; an LLM merges them into a consensus; a sampled fraction is human-verified through a 3-way-diff click-correct interface that also produces fine-tuning data. Adjust the parameters below to model the full 21-year envelope.</p>
     </div>
 
     <div class="calc-grid">
       <div class="inputs">
+
         <fieldset>
-          <legend>Automated processing</legend>
-
-          <div class="input-row">
-            <label for="ocr-cost">OCR cost <span class="unit">€ / page</span></label>
-            <div class="control">
-              <input type="range" id="ocr-cost" min="0.001" max="0.02" step="0.0005" value="0.006">
-              <input type="number" id="ocr-cost-num" min="0" step="0.0005" value="0.006">
+          <legend>A · Corpus scope</legend>
+          <div class="scope-grid">
+            <div class="scope-item">
+              <div class="scope-label">Total pages to process</div>
+              <div class="scope-value" id="scope-pages">10,801,340</div>
+              <div class="scope-sub">5.96 M ACO · 4.54 M ShamelaAY · 0.30 M other</div>
             </div>
-          </div>
-
-          <div class="input-row">
-            <label for="tag-cost">Structural tagging (LLM) <span class="unit">€ / page</span></label>
-            <div class="control">
-              <input type="range" id="tag-cost" min="0.001" max="0.02" step="0.0005" value="0.005">
-              <input type="number" id="tag-cost-num" min="0" step="0.0005" value="0.005">
+            <div class="scope-item">
+              <div class="scope-label">Total records</div>
+              <div class="scope-value" id="scope-records">29,908</div>
+              <div class="scope-sub">17,790 ACO · 11,578 ShamelaAY · 540 other</div>
             </div>
-          </div>
-
-          <div class="input-row">
-            <label for="extract-cost">Bibliographic extraction (LLM) <span class="unit">€ / record</span></label>
-            <div class="control">
-              <input type="range" id="extract-cost" min="0.001" max="0.05" step="0.001" value="0.01">
-              <input type="number" id="extract-cost-num" min="0" step="0.001" value="0.01">
+            <div class="scope-item">
+              <div class="scope-label">Estimated tokens</div>
+              <div class="scope-value" id="scope-tokens">~3.24 B</div>
+              <div class="scope-sub">At 300 tokens/page; actual range varies with script density.</div>
             </div>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Human QC &amp; validation</legend>
+          <legend>B · OCR pipeline</legend>
+          <div class="radio-cards" role="radiogroup" aria-label="OCR pipeline path">
 
-          <div class="input-row">
-            <label for="fte-rate">FTE hourly rate <span class="unit">€ / hour</span></label>
-            <div class="control">
-              <input type="range" id="fte-rate" min="20" max="80" step="1" value="40">
-              <input type="number" id="fte-rate-num" min="0" step="1" value="40">
-            </div>
-          </div>
+            <label class="radio-card">
+              <input type="radio" name="ocr-path" value="path1" checked>
+              <span class="rc-head">
+                <span class="rc-name">Datalab API consensus</span>
+                <span class="rc-stats"><strong>€5.50</strong> / 1,000 pages · <strong>~3,600</strong> pages/hr per instance</span>
+              </span>
+              <span class="rc-desc">Chandra @ Datalab (€4/1k) + Google Vision (€1.50/1k) + Mistral Batch (€1/1k). Three engines run in parallel; LLM merges to consensus. Throughput verified in Alicia González Martínez's October 2026 pipeline tests.</span>
+            </label>
 
-          <div class="input-row">
-            <label for="pages-day">QC throughput <span class="unit">pages / FTE-day</span></label>
-            <div class="control">
-              <input type="range" id="pages-day" min="500" max="5000" step="100" value="2000">
-              <input type="number" id="pages-day-num" min="100" step="100" value="2000">
-            </div>
-          </div>
+            <label class="radio-card">
+              <input type="radio" name="ocr-path" value="path2">
+              <span class="rc-head">
+                <span class="rc-name">Runpod self-host consensus</span>
+                <span class="rc-stats"><strong>€2.50</strong> / 1,000 pages · <strong>~5,200</strong> pages/hr per instance</span>
+              </span>
+              <span class="rc-desc">Chandra on Runpod H100 PCIe ($2.39/hr ≈ €2.05/hr; ~1.44 pages/sec ≈ 5,184 pages/hr) + Google Vision + Mistral. Lowest per-page cost; Chandra is the throughput bottleneck.</span>
+            </label>
 
-          <div class="input-row">
-            <label for="fte-count">Parallel QC reviewers <span class="unit">FTEs</span></label>
-            <div class="control">
-              <input type="range" id="fte-count" min="1" max="10" step="1" value="2">
-              <input type="number" id="fte-count-num" min="1" step="1" value="2">
-            </div>
+            <label class="radio-card">
+              <input type="radio" name="ocr-path" value="path3">
+              <span class="rc-head">
+                <span class="rc-name">Apple Silicon local</span>
+                <span class="rc-stats"><strong>€1.50</strong> / 1,000 pages · <strong>~55</strong> pages/hr per instance</span>
+              </span>
+              <span class="rc-desc">Chandra HuggingFace local on M-series Mac (observed 65.7 sec/page) + Google Vision + Mistral. Cheapest per page but glacially slow — used for development and verification, not production at scale.</span>
+            </label>
+
           </div>
         </fieldset>
+
+        <fieldset>
+          <legend>C · LLM post-processing</legend>
+
+          <div class="input-row">
+            <label for="llm-consensus">LLM consensus / merging <span class="unit">€ / page</span></label>
+            <div class="control">
+              <input type="range" id="llm-consensus" min="0.001" max="0.02" step="0.001" value="0.005">
+              <input type="number" id="llm-consensus-num" min="0" step="0.001" value="0.005">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="llm-tagging">Structural tagging → mARkdown <span class="unit">€ / page</span></label>
+            <div class="control">
+              <input type="range" id="llm-tagging" min="0.001" max="0.02" step="0.001" value="0.005">
+              <input type="number" id="llm-tagging-num" min="0" step="0.001" value="0.005">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="llm-biblio">Bibliographic extraction <span class="unit">€ / record</span></label>
+            <div class="control">
+              <input type="range" id="llm-biblio" min="0.001" max="0.1" step="0.001" value="0.01">
+              <input type="number" id="llm-biblio-num" min="0" step="0.001" value="0.01">
+            </div>
+          </div>
+
+          <p class="caption">Defaults based on Sonnet/Haiku token math at ~300 tokens/page input.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>D · Verification &amp; validation</legend>
+
+          <div class="input-row">
+            <label for="qc-sample">QC sampling rate <span class="unit">% of pages verified</span></label>
+            <div class="control">
+              <input type="range" id="qc-sample" min="1" max="100" step="1" value="10">
+              <input type="number" id="qc-sample-num" min="1" max="100" step="1" value="10">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="qc-time">Time per verified page <span class="unit">seconds</span></label>
+            <div class="control">
+              <input type="range" id="qc-time" min="5" max="180" step="5" value="30">
+              <input type="number" id="qc-time-num" min="5" max="180" step="5" value="30">
+            </div>
+            <p class="sub-label">3-way diff with single-click correction; verified output feeds fine-tuning data for the local Chandra model.</p>
+          </div>
+
+          <div class="input-row">
+            <label for="parallel">Parallel OCR instances <span class="unit">copies of pipeline</span></label>
+            <div class="control">
+              <input type="range" id="parallel" min="1" max="32" step="1" value="4">
+              <input type="number" id="parallel-num" min="1" max="32" step="1" value="4">
+            </div>
+            <p class="sub-label">How many copies of the pipeline run in parallel.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>E · Team composition</legend>
+
+          <div class="input-row">
+            <label for="dh-intensive">
+              DH developer, years 1–3 <span class="role-note">intensive development</span>
+              <span class="unit"><span id="dh-intensive-val">100</span>%</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="dh-intensive" min="50" max="100" step="5" value="100">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="dh-maintenance">
+              DH developer, years 4–21 <span class="role-note">maintenance</span>
+              <span class="unit"><span id="dh-maintenance-val">30</span>%</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="dh-maintenance" min="0" max="100" step="5" value="30">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="validation-pct">
+              Validation specialist, years 1–21 <span class="role-note">steady state</span>
+              <span class="unit"><span id="validation-val">30</span>%</span>
+            </label>
+            <div class="control single">
+              <input type="range" id="validation-pct" min="0" max="100" step="5" value="30">
+            </div>
+          </div>
+
+          <div class="team-summary">
+            <div><span class="ts-label">DH developer total:</span> <strong id="dh-total">8.4</strong> person-years</div>
+            <div><span class="ts-label">Validation specialist total:</span> <strong id="val-total">6.3</strong> person-years</div>
+          </div>
+        </fieldset>
+
       </div>
 
-      <div class="outputs">
-        <div class="output-tile primary">
-          <div class="output-label">Total Phase 1 cost</div>
-          <div class="output-value" id="total-cost">€ —</div>
-          <div class="output-breakdown">
-            <span>API: <strong id="api-cost">€ —</strong></span>
-            <span>Labor: <strong id="labor-cost">€ —</strong></span>
+      <aside class="outputs sticky-col" aria-label="Computed outputs">
+
+        <div class="output-group">
+          <div class="output-group-heading">
+            <span class="og-num">1</span>
+            <span>Monetary costs</span>
+            <span class="og-sub">euros only</span>
+          </div>
+
+          <div class="output-tile mid">
+            <div class="output-label">Total API &amp; compute</div>
+            <div class="output-value sm-num" id="total-api-cost">€ —</div>
+            <div class="breakdown-grid">
+              <span>OCR pipeline</span><strong id="cost-ocr">€ —</strong>
+              <span>LLM consensus</span><strong id="cost-consensus">€ —</strong>
+              <span>Structural tagging</span><strong id="cost-tagging">€ —</strong>
+              <span>Bibliographic extraction</span><strong id="cost-biblio">€ —</strong>
+            </div>
+            <p class="og-note">The only category that converts to money at proposal stage.</p>
           </div>
         </div>
-        <div class="output-tile">
-          <div class="output-label">FTE-hours</div>
-          <div class="output-value" id="fte-hours">—</div>
-          <div class="output-breakdown"><span>Across full 10.8 M-page corpus</span></div>
+
+        <div class="output-group primary">
+          <div class="output-group-heading">
+            <span class="og-num">2</span>
+            <span>Human time</span>
+            <span class="og-sub">reported in FTE, not in euros</span>
+          </div>
+
+          <div class="output-tile xl">
+            <div class="output-label">DH developer total</div>
+            <div class="output-value xl-num" id="dh-py">— PY</div>
+            <div class="output-sub" id="dh-py-sub">≈ — person-months</div>
+          </div>
+
+          <div class="output-tile xl">
+            <div class="output-label">Validation specialist total</div>
+            <div class="output-value xl-num" id="val-py">— PY</div>
+            <div class="output-sub" id="val-py-sub">≈ — person-months</div>
+          </div>
+
+          <div class="output-tile">
+            <div class="output-label">QC verification</div>
+            <div class="output-value lg-num" id="qc-hrs">— FTE-hours</div>
+            <div class="output-sub"><span id="qc-fte-years">— FTE-years</span> · at sampling rate × time per page, distributed across project years</div>
+          </div>
+
+          <p class="og-note">Per Akademie convention, human time is reported in FTE; conversion to budget happens at BBAW review via TV-L salary tables.</p>
         </div>
-        <div class="output-tile">
-          <div class="output-label">Calendar months</div>
-          <div class="output-value" id="cal-months">—</div>
-          <div class="output-breakdown"><span id="cal-sub">at chosen throughput</span></div>
+
+        <div class="output-group">
+          <div class="output-group-heading">
+            <span class="og-num">3</span>
+            <span>Schedule</span>
+          </div>
+
+          <div class="output-tile mid">
+            <div class="output-label">OCR processing wall-clock</div>
+            <div class="output-value sm-num" id="ocr-wall">— hours</div>
+            <div class="output-sub" id="ocr-wall-sub">— days · — weeks</div>
+          </div>
+
+          <div class="output-tile mid">
+            <div class="output-label">Full project duration</div>
+            <div class="output-value sm-num">21 years</div>
+            <div class="output-sub">Fixed — this is an Akademie Vorhaben.</div>
+          </div>
         </div>
-      </div>
+
+      </aside>
     </div>
 
-    <p class="note">Per-page costs apply to all 10,801,340 corpus pages; per-record costs apply to all 29,908 records. FTE-hours = total&nbsp;pages ÷ throughput × 8&nbsp;hours. Calendar months assume 20 working days per FTE-month and the chosen number of reviewers working in parallel.</p>
+    <p class="note">OCR throughput figures are derived from limited test runs (Alicia González Martínez, October 2026) and vendor-published benchmarks for Datalab, Google Cloud Vision, and Mistral OCR. LLM pricing assumes Anthropic Sonnet/Haiku rates for consensus merging and structural tagging. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. ShamelaAY records are from the Shamela digital library.</p>
   </section>
 
   <footer class="page-footer">
-    <p>Corpus snapshot · ACO (Princeton) + ShamelaAY + personal collections · 2026</p>
+    <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + ShamelaAY + personal collections · 2026</p>
   </footer>
 
   <script src="app.js"></script>
