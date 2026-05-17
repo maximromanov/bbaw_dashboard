@@ -220,3 +220,433 @@ document.querySelectorAll('.preset[data-target="corpus-size"]').forEach((btn) =>
 });
 
 compute();
+
+// ═══════════════════════════════════════════════════════════
+//   Corpus data loading (shared across stats panel + browser)
+// ═══════════════════════════════════════════════════════════
+
+const fmtN = (n) => fmt.int.format(n);
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+(async function loadCorpus() {
+  try {
+    const response = await fetch('data/corpus_merged.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    initStatsPanel(data);
+    initBrowser(data);
+  } catch (err) {
+    console.error('Failed to load corpus:', err);
+    const msg = `Could not load corpus_merged.json (${err.message}). Serve over HTTP — file:// access is blocked by the browser.`;
+    $('breakdown-body').innerHTML =
+      `<tr><td colspan="6" class="loading-cell">${escapeHtml(msg)}</td></tr>`;
+    $('histogram').innerHTML       = `<div class="loading-cell">${escapeHtml(msg)}</div>`;
+    $('top-works').innerHTML       = `<li class="loading-cell">${escapeHtml(msg)}</li>`;
+    $('top-volumes').innerHTML     = `<li class="loading-cell">${escapeHtml(msg)}</li>`;
+    $('b-summary').textContent     = msg;
+    $('browse-body').innerHTML     = `<tr><td colspan="7" class="loading-cell">${escapeHtml(msg)}</td></tr>`;
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+//   A · Corpus at a glance — stats panel
+// ═══════════════════════════════════════════════════════════
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+}
+
+const SOURCE_LABELS = {
+  aco:            'ACO',
+  shamela_ay:     'ShamelaAY',
+  personal_other: 'Personal / Other',
+};
+
+function initStatsPanel(data) {
+  renderBreakdownTable(data);
+  renderHistogram(data);
+  renderTopWorks(data);
+  renderTopVolumes(data);
+}
+
+function renderBreakdownTable(data) {
+  const rows = [];
+  let totalVols = 0, totalPages = 0, totalWorks = 0;
+  const allPagesGlobal = [];
+
+  for (const src of ['aco', 'shamela_ay', 'personal_other']) {
+    const recs = data.filter((r) => r.source === src);
+    const withPages = recs.map((r) => r.pages).filter((p) => typeof p === 'number' && p > 0);
+    const workIds = new Set(recs.map((r) => r.work_id).filter(Boolean));
+    const sumPages = withPages.reduce((a, b) => a + b, 0);
+    const avg = withPages.length ? Math.round(sumPages / withPages.length) : null;
+    const med = median(withPages);
+
+    rows.push({
+      label: SOURCE_LABELS[src],
+      vols:  recs.length,
+      works: workIds.size,
+      pages: sumPages,
+      avg,
+      median: med,
+      hasWorks: src !== 'personal_other',
+    });
+    totalVols += recs.length;
+    totalPages += sumPages;
+    totalWorks += workIds.size;
+    allPagesGlobal.push(...withPages);
+  }
+
+  rows.push({
+    label: 'TOTAL',
+    vols:  totalVols,
+    works: totalWorks,
+    pages: totalPages,
+    avg:   Math.round(totalPages / allPagesGlobal.length),
+    median: median(allPagesGlobal),
+    hasWorks: true,
+    isTotal: true,
+  });
+
+  $('breakdown-body').innerHTML = rows.map((r) => `
+    <tr class="${r.isTotal ? 'total-row' : ''}">
+      <td>${escapeHtml(r.label)}</td>
+      <td class="num">${fmtN(r.vols)}</td>
+      <td class="num">${r.hasWorks ? fmtN(r.works) : '—'}</td>
+      <td class="num">${fmtN(r.pages)}</td>
+      <td class="num">${r.avg != null ? fmtN(r.avg) : '—'}</td>
+      <td class="num">${r.median != null ? fmtN(r.median) : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderHistogram(data) {
+  const bins = [
+    { label: '0 – 100',       min: 0,    max: 100,      count: 0 },
+    { label: '101 – 300',     min: 101,  max: 300,      count: 0 },
+    { label: '301 – 500',     min: 301,  max: 500,      count: 0 },
+    { label: '501 – 1,000',   min: 501,  max: 1000,     count: 0 },
+    { label: '1,001 – 3,000', min: 1001, max: 3000,     count: 0 },
+    { label: '3,001 +',       min: 3001, max: Infinity, count: 0 },
+  ];
+  for (const r of data) {
+    if (typeof r.pages !== 'number' || r.pages <= 0) continue;
+    for (const b of bins) {
+      if (r.pages >= b.min && r.pages <= b.max) { b.count++; break; }
+    }
+  }
+  const maxCount = Math.max(...bins.map((b) => b.count), 1);
+  $('histogram').innerHTML = bins.map((b) => `
+    <div class="hist-bin">
+      <div class="hist-label">${b.label}</div>
+      <div class="hist-bar-wrap"><div class="hist-bar" style="width: ${(b.count / maxCount * 100).toFixed(1)}%"></div></div>
+      <div class="hist-count">${fmtN(b.count)}</div>
+    </div>
+  `).join('');
+}
+
+function renderTopWorks(data) {
+  const byWork = new Map();
+  for (const r of data) {
+    if (!r.work_id) continue;
+    let w = byWork.get(r.work_id);
+    if (!w) {
+      w = { count: 0, pages: 0, longestTitle: '', author: '' };
+      byWork.set(r.work_id, w);
+    }
+    w.count++;
+    if (typeof r.pages === 'number' && r.pages > 0) w.pages += r.pages;
+    if (r.title && r.title.length > w.longestTitle.length) w.longestTitle = r.title;
+    if (!w.author && r.author) w.author = r.author;
+  }
+
+  const works = [...byWork.values()]
+    .sort((a, b) => b.count - a.count || b.pages - a.pages)
+    .slice(0, 10);
+
+  $('top-works').innerHTML = works.map((w) => `
+    <li>
+      <span class="topn-title" dir="auto">${escapeHtml(w.longestTitle || '—')}</span>
+      <span class="topn-meta" dir="auto">${escapeHtml(w.author || '—')} · ${fmtN(w.count)} volumes · ${fmtN(w.pages)} pages</span>
+    </li>
+  `).join('');
+}
+
+function renderTopVolumes(data) {
+  const top = data
+    .filter((r) => typeof r.pages === 'number' && r.pages > 0)
+    .sort((a, b) => b.pages - a.pages)
+    .slice(0, 10);
+
+  $('top-volumes').innerHTML = top.map((r) => `
+    <li>
+      <span class="topn-title" dir="auto">${escapeHtml(r.title || '—')}</span>
+      <span class="topn-meta" dir="auto">${escapeHtml(r.author || '—')} · ${fmtN(r.pages)} pages</span>
+    </li>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//   B · Corpus browser — search, filter, paginate
+// ═══════════════════════════════════════════════════════════
+
+const BROWSER = {
+  data:     [],
+  byId:     null,
+  index:    null,
+  filtered: [],
+  page:     1,
+  perPage:  25,
+  expanded: new Set(),
+  query:    '',
+};
+
+function initBrowser(data) {
+  BROWSER.data = data;
+  BROWSER.byId = new Map(data.map((r) => [r.record_id, r]));
+
+  // Build MiniSearch index
+  BROWSER.index = new MiniSearch({
+    idField: 'record_id',
+    fields: ['title', 'author', 'publisher', 'pub_place',
+             'discipline_native', 'discipline_normalized'],
+    storeFields: ['record_id'],
+    searchOptions: {
+      boost: { title: 3, author: 2 },
+      fuzzy: 0.2,
+      prefix: true,
+    },
+  });
+  BROWSER.index.addAll(data.map((r) => ({
+    record_id:             r.record_id,
+    title:                 r.title || '',
+    author:                r.author || '',
+    publisher:             r.publisher || '',
+    pub_place:             r.pub_place || '',
+    discipline_native:     r.discipline_native || '',
+    discipline_normalized: r.discipline_normalized || '',
+  })));
+
+  // Populate discipline filter dropdown
+  const counts = new Map();
+  for (const r of data) {
+    const key = r.discipline_normalized || '(unmapped)';
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const select = $('b-discipline');
+  for (const [d, c] of sorted) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = `${d} (${fmtN(c)})`;
+    select.appendChild(opt);
+  }
+
+  // Enable controls
+  ['b-search', 'b-source', 'b-discipline', 'b-year-from', 'b-year-to',
+   'b-prev', 'b-next'].forEach((id) => { $(id).disabled = false; });
+
+  // Wire events
+  let searchTimer;
+  $('b-search').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      BROWSER.query = $('b-search').value.trim();
+      applyFilters();
+    }, 200);
+  });
+  ['b-source', 'b-discipline'].forEach((id) =>
+    $(id).addEventListener('change', applyFilters));
+  ['b-year-from', 'b-year-to'].forEach((id) =>
+    $(id).addEventListener('input', applyFilters));
+
+  $('b-prev').addEventListener('click', () => {
+    if (BROWSER.page > 1) { BROWSER.page--; renderBrowseTable(); }
+  });
+  $('b-next').addEventListener('click', () => {
+    const maxPage = Math.max(1, Math.ceil(BROWSER.filtered.length / BROWSER.perPage));
+    if (BROWSER.page < maxPage) { BROWSER.page++; renderBrowseTable(); }
+  });
+
+  // Delegated click handler for rows + title buttons
+  $('browse-body').addEventListener('click', handleBrowseClick);
+
+  applyFilters();
+}
+
+function applyFilters() {
+  const src      = $('b-source').value;
+  const disc     = $('b-discipline').value;
+  const yFromRaw = $('b-year-from').value.trim();
+  const yToRaw   = $('b-year-to').value.trim();
+  const yFrom    = yFromRaw === '' ? null : parseInt(yFromRaw, 10);
+  const yTo      = yToRaw   === '' ? null : parseInt(yToRaw,   10);
+  const q        = BROWSER.query;
+
+  let candidates;
+  if (q) {
+    const hits = BROWSER.index.search(q, {
+      boost: { title: 3, author: 2 },
+      fuzzy: 0.2,
+      prefix: true,
+    });
+    candidates = hits.map((h) => BROWSER.byId.get(h.id)).filter(Boolean);
+  } else {
+    candidates = BROWSER.data;
+  }
+
+  BROWSER.filtered = candidates.filter((r) => {
+    if (src  && r.source !== src) return false;
+    if (disc) {
+      const d = r.discipline_normalized || '(unmapped)';
+      if (d !== disc) return false;
+    }
+    if (yFrom != null) {
+      if (typeof r.pub_year !== 'number' || r.pub_year < yFrom) return false;
+    }
+    if (yTo != null) {
+      if (typeof r.pub_year !== 'number' || r.pub_year > yTo) return false;
+    }
+    return true;
+  });
+
+  BROWSER.page = 1;
+  renderBrowseTable();
+}
+
+function renderBrowseTable() {
+  const total   = BROWSER.filtered.length;
+  const maxPage = Math.max(1, Math.ceil(total / BROWSER.perPage));
+  BROWSER.page  = Math.min(BROWSER.page, maxPage);
+
+  const start = (BROWSER.page - 1) * BROWSER.perPage;
+  const slice = BROWSER.filtered.slice(start, start + BROWSER.perPage);
+
+  $('b-summary').innerHTML =
+    `Showing <strong>${fmtN(total)}</strong> of <strong>${fmtN(BROWSER.data.length)}</strong> records`;
+  $('b-pageinfo').textContent = `Page ${fmtN(BROWSER.page)} of ${fmtN(maxPage)}`;
+  $('b-prev').disabled = BROWSER.page <= 1;
+  $('b-next').disabled = BROWSER.page >= maxPage;
+
+  $('browse-body').innerHTML = slice.map((r) => {
+    const isExpanded = BROWSER.expanded.has(r.record_id);
+    return rowHtml(r, isExpanded) + (isExpanded ? detailRowHtml(r) : '');
+  }).join('') || `<tr><td colspan="7" class="loading-cell">No records match the current filters.</td></tr>`;
+}
+
+function rowHtml(r, expanded) {
+  const discipline = r.discipline_normalized || r.discipline_native || '—';
+  let titleHtml;
+  if (r.permanent_link) {
+    titleHtml = `<a href="${escapeHtml(r.permanent_link)}" target="_blank" rel="noopener" class="title-link" dir="auto">${escapeHtml(r.title || '—')}</a>`;
+  } else {
+    const path = localPath(r);
+    titleHtml = `<button type="button" class="title-button" dir="auto"
+      data-path="${escapeHtml(path)}" title="${escapeHtml(path) || 'no local path'}">${escapeHtml(r.title || '—')}</button>`;
+  }
+  return `<tr class="data-row${expanded ? ' expanded' : ''}" data-id="${escapeHtml(r.record_id)}">
+    <td class="title-cell">${titleHtml}</td>
+    <td class="author-cell" dir="auto">${escapeHtml(r.author || '—')}</td>
+    <td class="num">${r.pub_year != null ? r.pub_year : '—'}</td>
+    <td dir="auto">${escapeHtml(r.pub_place || '—')}</td>
+    <td class="num">${typeof r.pages === 'number' ? fmtN(r.pages) : '—'}</td>
+    <td class="disc-cell" dir="auto">${escapeHtml(discipline)}</td>
+    <td>${sourceBadgeHtml(r.source)}</td>
+  </tr>`;
+}
+
+function detailRowHtml(r) {
+  const rows = [];
+  const add = (k, v) => { if (v != null && v !== '') rows.push([k, v]); };
+  const span = (s)   => `<span dir="auto">${escapeHtml(s)}</span>`;
+  const code = (s)   => `<code>${escapeHtml(s)}</code>`;
+
+  add('Title',                    r.title  ? span(r.title)  : null);
+  add('Author',                   r.author ? span(r.author) : null);
+  add('Editor',                   r.editor ? span(r.editor) : null);
+  add('Publisher',                r.publisher ? span(r.publisher) : null);
+  add('Pub date (raw)',           r.pub_date_text);
+  add('Discipline (native)',      r.discipline_native     ? span(r.discipline_native)     : null);
+  add('Discipline (normalized)',  r.discipline_normalized ? span(r.discipline_normalized) : null);
+  add('Language',                 r.language);
+  add('Provider',                 r.provider ? span(r.provider) : null);
+  add('LC call number',           r.lc_call_number ? code(r.lc_call_number) : null);
+  if (r.vol_from != null || r.vol_to != null) {
+    add('Volume range', `${r.vol_from ?? '—'} – ${r.vol_to ?? '—'}`);
+  }
+  add('Pages',  typeof r.pages === 'number' ? fmtN(r.pages) : null);
+  add('Size',   typeof r.mb    === 'number' ? `${r.mb.toFixed(2)} MB` : null);
+  if (r.permanent_link) {
+    add('Permanent link',
+        `<a href="${escapeHtml(r.permanent_link)}" target="_blank" rel="noopener">${escapeHtml(r.permanent_link)}</a>`);
+  }
+  add('Filename',     r.filename    ? code(r.filename)    : null);
+  add('Parent path',  r.parent_path ? code(r.parent_path) : null);
+  add('record_id',    code(r.record_id));
+  if (r.work_id)      add('work_id', code(r.work_id));
+  add('Extraction confidence', r.extraction_confidence);
+
+  return `<tr class="detail-row"><td colspan="7"><div class="detail-panel"><dl>${
+    rows.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${v}</dd>`).join('')
+  }</dl></div></td></tr>`;
+}
+
+function sourceBadgeHtml(src) {
+  const map = {
+    aco:            { label: 'ACO',     cls: 'src-aco' },
+    shamela_ay:     { label: 'Shamela', cls: 'src-shamela' },
+    personal_other: { label: 'Other',   cls: 'src-other' },
+  };
+  const cfg = map[src] || { label: escapeHtml(src || '—'), cls: 'src-other' };
+  return `<span class="src-badge ${cfg.cls}">${cfg.label}</span>`;
+}
+
+function localPath(r) {
+  if (r.parent_path && r.filename) return `${r.parent_path}/${r.filename}`;
+  return r.filename || r.parent_path || '';
+}
+
+function handleBrowseClick(e) {
+  // Title button click → copy path + show inline tip
+  const titleBtn = e.target.closest('.title-button');
+  if (titleBtn) {
+    e.stopPropagation();
+    const path = titleBtn.dataset.path;
+    if (!path) return;
+    const showTip = () => {
+      titleBtn.querySelectorAll('.copied-tip').forEach((n) => n.remove());
+      const tip = document.createElement('span');
+      tip.className = 'copied-tip';
+      tip.textContent = 'path copied';
+      titleBtn.appendChild(tip);
+      setTimeout(() => tip.remove(), 1500);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(path).then(showTip, showTip);
+    } else {
+      showTip();
+    }
+    return;
+  }
+  // Anchor (permanent_link) — let browser handle it
+  if (e.target.closest('a')) return;
+  // Otherwise, toggle row expansion
+  const row = e.target.closest('tr.data-row');
+  if (!row) return;
+  const id = row.dataset.id;
+  if (BROWSER.expanded.has(id)) BROWSER.expanded.delete(id);
+  else                          BROWSER.expanded.add(id);
+  renderBrowseTable();
+}

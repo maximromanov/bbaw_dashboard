@@ -419,10 +419,135 @@
     <p class="note">OCR pipeline architecture: open-weight vision-language models (Chandra-2, Qwen2.5-VL, InternVL3) deployed locally on owned hardware. Phase 1 infrastructure is a single NVIDIA DGX Spark (Grace-Blackwell, 128 GB unified memory; ~€5,000 hardware investment, hosted at BBAW server room as institutional infrastructure). Models are run in self-consensus mode (same model, multiple stochastic passes) and cross-model consensus, voting on disputed sentences only. LLM API access is used selectively for localized consensus resolution and header-coordinate detection (~€2,000 across the project lifetime). The 3-way diff verification interface simultaneously serves three purposes: quality assurance, generation of (image, text) training pairs in EIS1600 mARkdown format, and iterative fine-tuning of open-weight models calibrated for classical Arabic typography. Header and poetry structural tags are explicitly captured as primary annotation targets, supporting downstream computational analysis. Fine-tuning runs are executed on owned hardware or via no-cost academic compute clusters. By Phase 2, fine-tuned local models are projected to handle the majority of pages without consensus, reducing per-page processing time by 5–10× and producing a redistributable Arabic-OCR model as a public research output. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. ShamelaAY records are from the Shamela digital library. HathiTrust integration is planned for Phase 3 via direct partnership negotiation.</p>
   </section>
 
+  <!-- ═══ Corpus at a glance ═══════════════════════════════ -->
+  <section class="info-panel" id="stats-panel" aria-labelledby="stats-heading">
+    <div class="section-header">
+      <h2 id="stats-heading">Corpus at a glance</h2>
+      <p>Breakdown by source and structure.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stats-col">
+        <h3 class="panel-subhead">Per-source breakdown</h3>
+        <div class="table-wrapper">
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th class="num">Volumes</th>
+                <th class="num">Unique works</th>
+                <th class="num">Pages</th>
+                <th class="num">Avg pp/vol</th>
+                <th class="num">Median pp/vol</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-body">
+              <tr><td colspan="6" class="loading-cell">Loading corpus data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hist-caption">Unique works summed per source; cross-source overlap is small. Personal/Other records have no <code>work_id</code> assigned.</p>
+      </div>
+
+      <div class="stats-col">
+        <h3 class="panel-subhead">Pages per volume — distribution</h3>
+        <div class="histogram" id="histogram">
+          <div class="loading-cell">Loading…</div>
+        </div>
+        <p class="hist-caption">Distribution of pages per volume. Median ~310 pages; long tail of multi-volume encyclopedias and reference works.</p>
+      </div>
+    </div>
+
+    <div class="topn-grid">
+      <div>
+        <h3 class="panel-subhead">Largest works (by volume count)</h3>
+        <ol class="topn-list" id="top-works">
+          <li class="loading-cell">Loading…</li>
+        </ol>
+      </div>
+      <div>
+        <h3 class="panel-subhead">Longest individual volumes (by page count)</h3>
+        <ol class="topn-list" id="top-volumes">
+          <li class="loading-cell">Loading…</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Corpus browser ═══════════════════════════════════ -->
+  <section class="info-panel" id="browser-panel" aria-labelledby="browser-heading">
+    <div class="section-header">
+      <h2 id="browser-heading">Corpus browser</h2>
+      <p>Search and filter the full metadata inventory.</p>
+    </div>
+
+    <div class="browser-controls">
+      <input type="search" id="b-search" class="search-input"
+             placeholder="Search by title, author, publisher, place…" autocomplete="off" disabled>
+
+      <div class="filter-row">
+        <label class="filter-label">
+          <span>Source</span>
+          <select id="b-source" disabled>
+            <option value="">All sources</option>
+            <option value="aco">ACO</option>
+            <option value="shamela_ay">ShamelaAY</option>
+            <option value="personal_other">Personal / Other</option>
+          </select>
+        </label>
+
+        <label class="filter-label">
+          <span>Discipline (normalized)</span>
+          <select id="b-discipline" disabled>
+            <option value="">All disciplines</option>
+          </select>
+        </label>
+
+        <label class="filter-label">
+          <span>Year from</span>
+          <input type="number" id="b-year-from" min="0" max="3000" placeholder="e.g. 1850" disabled>
+        </label>
+
+        <label class="filter-label">
+          <span>Year to</span>
+          <input type="number" id="b-year-to" min="0" max="3000" placeholder="e.g. 1950" disabled>
+        </label>
+      </div>
+
+      <div class="results-summary" id="b-summary">Loading corpus and building search index…</div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="browse-table">
+        <thead>
+          <tr>
+            <th class="col-title">Title</th>
+            <th class="col-author">Author</th>
+            <th class="num col-year">Year</th>
+            <th class="col-place">Place</th>
+            <th class="num col-pages">Pages</th>
+            <th class="col-disc">Discipline</th>
+            <th class="col-source">Source</th>
+          </tr>
+        </thead>
+        <tbody id="browse-body">
+          <tr><td colspan="7" class="loading-cell">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button type="button" id="b-prev" disabled>‹ Prev</button>
+      <span id="b-pageinfo" class="page-info">Page — of —</span>
+      <button type="button" id="b-next" disabled>Next ›</button>
+    </div>
+  </section>
+
   <footer class="page-footer">
     <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + ShamelaAY + personal collections · 2026</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
