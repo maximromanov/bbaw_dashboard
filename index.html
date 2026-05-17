@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invisible Authorship in the Global Arabic Written Tradition — Corpus & Budget</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="page-header">
+    <p class="eyebrow">BBAW Akademie · Proposal Companion</p>
+    <h1>Invisible Authorship in the Global Arabic Written Tradition</h1>
+    <p class="subtitle">Phase 1 corpus statistics and budget projection</p>
+  </header>
+
+  <section class="stats" aria-label="Headline corpus statistics">
+    <article class="tile">
+      <div class="tile-value">29,908</div>
+      <div class="tile-label">Records</div>
+      <div class="tile-sub">17,790 ACO · 11,578 ShamelaAY · 540 other</div>
+    </article>
+    <article class="tile">
+      <div class="tile-value">~17,000</div>
+      <div class="tile-label">Unique works</div>
+      <div class="tile-sub">12,554 ACO · 4,251 ShamelaAY (by work_id)</div>
+    </article>
+    <article class="tile">
+      <div class="tile-value">10.8 M</div>
+      <div class="tile-label">Pages</div>
+      <div class="tile-sub">5.96 M ACO · 4.54 M ShamelaAY · 0.30 M other</div>
+    </article>
+    <article class="tile">
+      <div class="tile-value">90 GB</div>
+      <div class="tile-label">Known file size</div>
+      <div class="tile-sub">ShamelaAY + personal_other (ACO sizes unknown)</div>
+    </article>
+  </section>
+
+  <section class="calculator" aria-label="Cost calculator">
+    <div class="section-header">
+      <h2>Phase 1 budget projection</h2>
+      <p>Adjust parameters to model OCR, LLM, and human-QC cost envelopes for the full corpus. Outputs update in real time; all values in euros.</p>
+    </div>
+
+    <div class="calc-grid">
+      <div class="inputs">
+        <fieldset>
+          <legend>Automated processing</legend>
+
+          <div class="input-row">
+            <label for="ocr-cost">OCR cost <span class="unit">€ / page</span></label>
+            <div class="control">
+              <input type="range" id="ocr-cost" min="0.001" max="0.02" step="0.0005" value="0.006">
+              <input type="number" id="ocr-cost-num" min="0" step="0.0005" value="0.006">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="tag-cost">Structural tagging (LLM) <span class="unit">€ / page</span></label>
+            <div class="control">
+              <input type="range" id="tag-cost" min="0.001" max="0.02" step="0.0005" value="0.005">
+              <input type="number" id="tag-cost-num" min="0" step="0.0005" value="0.005">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="extract-cost">Bibliographic extraction (LLM) <span class="unit">€ / record</span></label>
+            <div class="control">
+              <input type="range" id="extract-cost" min="0.001" max="0.05" step="0.001" value="0.01">
+              <input type="number" id="extract-cost-num" min="0" step="0.001" value="0.01">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Human QC &amp; validation</legend>
+
+          <div class="input-row">
+            <label for="fte-rate">FTE hourly rate <span class="unit">€ / hour</span></label>
+            <div class="control">
+              <input type="range" id="fte-rate" min="20" max="80" step="1" value="40">
+              <input type="number" id="fte-rate-num" min="0" step="1" value="40">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="pages-day">QC throughput <span class="unit">pages / FTE-day</span></label>
+            <div class="control">
+              <input type="range" id="pages-day" min="500" max="5000" step="100" value="2000">
+              <input type="number" id="pages-day-num" min="100" step="100" value="2000">
+            </div>
+          </div>
+
+          <div class="input-row">
+            <label for="fte-count">Parallel QC reviewers <span class="unit">FTEs</span></label>
+            <div class="control">
+              <input type="range" id="fte-count" min="1" max="10" step="1" value="2">
+              <input type="number" id="fte-count-num" min="1" step="1" value="2">
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="outputs">
+        <div class="output-tile primary">
+          <div class="output-label">Total Phase 1 cost</div>
+          <div class="output-value" id="total-cost">€ —</div>
+          <div class="output-breakdown">
+            <span>API: <strong id="api-cost">€ —</strong></span>
+            <span>Labor: <strong id="labor-cost">€ —</strong></span>
+          </div>
+        </div>
+        <div class="output-tile">
+          <div class="output-label">FTE-hours</div>
+          <div class="output-value" id="fte-hours">—</div>
+          <div class="output-breakdown"><span>Across full 10.8 M-page corpus</span></div>
+        </div>
+        <div class="output-tile">
+          <div class="output-label">Calendar months</div>
+          <div class="output-value" id="cal-months">—</div>
+          <div class="output-breakdown"><span id="cal-sub">at chosen throughput</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">Per-page costs apply to all 10,801,340 corpus pages; per-record costs apply to all 29,908 records. FTE-hours = total&nbsp;pages ÷ throughput × 8&nbsp;hours. Calendar months assume 20 working days per FTE-month and the chosen number of reviewers working in parallel.</p>
+  </section>
+
+  <footer class="page-footer">
+    <p>Corpus snapshot · ACO (Princeton) + ShamelaAY + personal collections · 2026</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
