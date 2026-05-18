@@ -399,8 +399,9 @@ function renderTopWorks(data) {
 
   $('top-works').innerHTML = works.map((w) => `
     <li>
-      <span class="topn-title" dir="auto">${escapeHtml(w.title)}</span>
-      <span class="topn-meta" dir="auto">${escapeHtml(w.author || '—')} · ${fmtN(w.count)} volumes · ${fmtN(w.pages)} pages</span>
+      <div class="topn-title" dir="auto">${escapeHtml(w.title)}</div>
+      <div class="topn-author${w.author ? '' : ' empty'}" dir="auto">${escapeHtml(w.author || '—')}</div>
+      <div class="topn-counts" dir="ltr">${fmtN(w.count)} volumes · ${fmtN(w.pages)} pages</div>
     </li>
   `).join('');
 }
@@ -414,8 +415,9 @@ function renderTopVolumes(data) {
 
   $('top-volumes').innerHTML = top.map((r) => `
     <li>
-      <span class="topn-title" dir="auto">${escapeHtml(r.title || '—')}</span>
-      <span class="topn-meta" dir="auto">${escapeHtml(r.author || '—')} · ${fmtN(r.pages)} pages</span>
+      <div class="topn-title" dir="auto">${escapeHtml(r.title || '—')}</div>
+      <div class="topn-author${r.author ? '' : ' empty'}" dir="auto">${escapeHtml(r.author || '—')}</div>
+      <div class="topn-counts" dir="ltr">${fmtN(r.pages)} pages</div>
     </li>
   `).join('');
 }
