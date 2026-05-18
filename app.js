@@ -357,28 +357,49 @@ function renderHistogram(data) {
   `).join('');
 }
 
+// True when the title field looks like a catalog code or volume designation
+// rather than a human-readable Arabic title. Used ONLY to clean up the
+// "Largest works" and "Longest individual volumes" display lists — junk-titled
+// records remain in the headline tiles, breakdown table, histogram, and the
+// search/filter browser (researchers may still need to find them by code).
+function looksLikeJunkTitle(title) {
+  if (title == null) return true;
+  const t = String(title).trim();
+  if (t.length < 6) return true;
+  if (!/[؀-ۿݐ-ݿ]/.test(t)) return true;
+  if (/^[0-9\s_\-.]+$/.test(t)) return true;
+  return false;
+}
+
 function renderTopWorks(data) {
   const byWork = new Map();
   for (const r of data) {
     if (!r.work_id) continue;
     let w = byWork.get(r.work_id);
     if (!w) {
-      w = { count: 0, pages: 0, longestTitle: '', author: '' };
+      w = { count: 0, pages: 0, titles: [], author: '' };
       byWork.set(r.work_id, w);
     }
     w.count++;
     if (typeof r.pages === 'number' && r.pages > 0) w.pages += r.pages;
-    if (r.title && r.title.length > w.longestTitle.length) w.longestTitle = r.title;
+    if (r.title) w.titles.push(r.title);
     if (!w.author && r.author) w.author = r.author;
   }
 
   const works = [...byWork.values()]
+    .map((w) => {
+      const clean = w.titles.filter((t) => !looksLikeJunkTitle(t));
+      if (clean.length === 0) return null;
+      const title = clean.reduce((a, b) => (b.length > a.length ? b : a));
+      return { count: w.count, pages: w.pages, author: w.author, title };
+    })
+    .filter(Boolean)
     .sort((a, b) => b.count - a.count || b.pages - a.pages)
     .slice(0, 10);
 
   $('top-works').innerHTML = works.map((w) => `
     <li>
-      <span class="topn-title" dir="auto">${escapeHtml(w.longestTitle || '—')}</span>
+      <span class="topn-title" dir="auto">${escapeHtml(w.title)}</span>
       <span class="topn-meta" dir="auto">${escapeHtml(w.author || '—')} · ${fmtN(w.count)} volumes · ${fmtN(w.pages)} pages</span>
     </li>
   `).join('');
@@ -387,6 +408,7 @@ function renderTopWorks(data) {
 function renderTopVolumes(data) {
   const top = data
     .filter((r) => typeof r.pages === 'number' && r.pages > 0)
+    .filter((r) => !looksLikeJunkTitle(r.title))
     .sort((a, b) => b.pages - a.pages)
     .slice(0, 10);
 
