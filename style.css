@@ -1132,6 +1132,67 @@ input[type=number]:focus {
    Layer 2 — Discipline distribution charts
    ═══════════════════════════════════════════════════════════ */
 
+/* Section-header layout when a toggle sits in the top-right */
+#discipline-panel .section-header.has-toggle-right {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+#discipline-panel .section-header.has-toggle-right .header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#discipline-panel .section-header.has-toggle-right .header-text h2,
+#discipline-panel .section-header.has-toggle-right .header-text p {
+  margin: 0;
+}
+#discipline-panel .section-header.has-toggle-right .header-text h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+#discipline-panel .section-header.has-toggle-right .header-text p {
+  color: var(--text-muted);
+  max-width: 64ch;
+}
+
+/* AR / EN language pill toggle */
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.lang-btn {
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border: none;
+  background: #ececec;
+  color: #555;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-right: 1px solid var(--border-strong);
+  transition: background 0.12s, color 0.12s;
+}
+.lang-btn:last-child { border-right: none; }
+.lang-btn.active {
+  background: var(--accent);
+  color: white;
+}
+.lang-btn:hover:not(.active) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .metric-toggle {
   display: inline-flex;
   margin-bottom: 24px;

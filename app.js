@@ -700,6 +700,34 @@ const UNIFIED_ORDER = [
   'العلوم الحديثة',
 ];
 
+// Asterisk-wrapped runs (e.g. "*ʿaqīda*") mark words that would render in
+// italic typography in prose. Chart.js renders Y-axis labels via canvas,
+// which can't show inline italics in a single label, so we strip the markers
+// at chart-render time. The dictionary preserves them for any future HTML
+// rendering (legend, prose, tooltips).
+const BUCKET_TRANSLATIONS = {
+  'علوم القرآن':              'Qurʾānic Sciences',
+  'علوم الحديث':              'Ḥadīṯ Sciences',
+  'العقيدة والكلام':          'Creed & Theology (*ʿaqīda* and *kalām*)',
+  'الفقه وأصوله':             'Law & Legal Theory (*fiqh* and *uṣūl*)',
+  'الرقاق والدعوة':           'Piety & Preaching (*raqāʾiq* and *daʿwa*)',
+  'التراجم والسيرة':          'Biography, Prosopography & Hagiography',
+  'التاريخ والجغرافيا':       'History & Geography',
+  'اللغة والمعاجم':           'Language & Lexicography',
+  'الأدب والبلاغة':           'Literature & Rhetoric (*adab* and *balāġa*)',
+  'المراجع والمجاميع':        'Reference & Compilations',
+  'مجاميع المؤلفين':          'Author Corpora',
+  'الفلسفة والدين (مختلط)':   'Religion & Philosophy (LC-merged)',
+  'اللغات والآداب (مختلط)':   'Languages & Literatures (LC-merged)',
+  'العلوم الحديثة':           'Modern Subjects',
+};
+
+function bucketLabelForChart(arabic, lang) {
+  if (lang === 'ar') return arabic;
+  const en = BUCKET_TRANSLATIONS[arabic];
+  return en ? en.replace(/\*/g, '') : arabic;
+}
+
 // Bare numerics ("192", "462", etc.) leak into ACO discipline_native as
 // singletons. They're cataloging noise — strip them out of the charts.
 function looksLikeJunkCategory(label) {
@@ -922,7 +950,7 @@ function makeUnifiedChart(canvasId) {
   });
 }
 
-const DISC = { agg: null, charts: null, metric: 'pdfs' };
+const DISC = { agg: null, charts: null, metric: 'pdfs', lang: 'ar' };
 
 function initDisciplineCharts(data) {
   if (typeof Chart === 'undefined') {
@@ -952,6 +980,20 @@ function initDisciplineCharts(data) {
     });
   });
 
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.lang;
+      if (next === DISC.lang) return;
+      DISC.lang = next;
+      document.querySelectorAll('.lang-btn').forEach((b) => {
+        const on = b.dataset.lang === next;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      updateDisciplineCharts();
+    });
+  });
+
   updateDisciplineCharts();
 }
 
@@ -971,6 +1013,7 @@ function updateDisciplineCharts() {
   DISC.charts.aco.update();
 
   const u = buildUnifiedPayload(m, DISC.agg);
+  DISC.charts.unified.data.labels = UNIFIED_ORDER.map((k) => bucketLabelForChart(k, DISC.lang));
   DISC.charts.unified.data.datasets[0].data = u.acoData;
   DISC.charts.unified.data.datasets[0].pcts = u.acoPcts;
   DISC.charts.unified.data.datasets[1].data = u.shData;

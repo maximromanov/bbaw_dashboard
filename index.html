@@ -476,14 +476,20 @@
 
   <!-- ═══ Discipline distributions (Layer 2) ══════════════ -->
   <section class="info-panel" id="discipline-panel" aria-labelledby="discipline-heading">
-    <div class="section-header">
-      <h2 id="discipline-heading">Corpus composition — discipline distribution</h2>
-      <p>Three views of the same corpus, revealing why computational typology is necessary.</p>
+    <div class="section-header has-toggle-right">
+      <div class="header-text">
+        <h2 id="discipline-heading">Corpus composition — discipline distribution</h2>
+        <p>Three views of the same corpus, revealing why computational typology is necessary.</p>
+      </div>
+      <div class="lang-toggle" role="radiogroup" aria-label="Label language">
+        <button type="button" class="lang-btn active" data-lang="ar" aria-pressed="true">AR</button>
+        <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+      </div>
     </div>
 
     <div class="metric-toggle" role="radiogroup" aria-label="Metric to display">
       <button type="button" class="metric-btn active" data-metric="pdfs" aria-pressed="true">PDF volumes</button>
-      <button type="button" class="metric-btn" data-metric="works" aria-pressed="false">Unique works</button>
+      <button type="button" class="metric-btn" data-metric="works" aria-pressed="false">Unique Works (approximate)</button>
     </div>
 
     <div class="chart-card">
