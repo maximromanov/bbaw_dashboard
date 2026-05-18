@@ -1,10 +1,5 @@
 # BBAW Akademie Proposal: Companion Dashboard
 
-Interactive corpus overview for the proposed Akademie Vorhaben
-"Invisible Authorship in the Global Arabic Written Tradition"
-(Berlin-Brandenburgische Akademie der Wissenschaften, application 2026,
-prospective project start 2028).
-
 Live dashboard: https://maximromanov.github.io/bbaw_dashboard/
 
 ## Sections
