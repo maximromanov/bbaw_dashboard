@@ -1271,9 +1271,52 @@ input[type=number]:focus {
   padding: 10px;
   border: 1px solid var(--border);
 }
-.chart-host.h-shamela { height: 680px; }
-.chart-host.h-aco     { height: 540px; }
-.chart-host.h-unified { height: 760px; }
+.chart-host.h-shamela { height: 920px; }
+.chart-host.h-aco     { height: 720px; }
+.chart-host.h-unified { height: 820px; }
+
+/* HTML overlay axis labels (bilingual EN + AR stacked) */
+.axis-labels-overlay {
+  position: absolute;
+  top: 10px;       /* matches .chart-host padding */
+  left: 10px;
+  height: calc(100% - 20px);
+  pointer-events: none;
+  overflow: visible;
+  font-feature-settings: "tnum";
+}
+.axis-label {
+  position: absolute;
+  transform: translateY(-50%);
+  text-align: right;
+  line-height: 1.15;
+  pointer-events: auto;
+  white-space: normal;
+}
+.al-primary {
+  font-weight: 600;
+  color: var(--text);
+}
+.al-primary.en,
+.al-secondary.en {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+.al-primary.ar,
+.al-secondary.ar {
+  font-family: 'Amiri', 'Georgia', serif;
+}
+.al-primary.en  { font-size: 11px; }
+.al-primary.ar  { font-size: 14px; }
+.al-secondary   {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.al-secondary.en { font-size: 10px; }
+.al-secondary.ar { font-size: 12px; }
+.axis-label em {
+  font-style: italic;
+}
 
 .interpretive {
   margin-top: 28px;
@@ -1286,7 +1329,31 @@ input[type=number]:focus {
 }
 
 @media (max-width: 720px) {
-  .chart-host.h-shamela { height: 600px; }
-  .chart-host.h-aco     { height: 480px; }
-  .chart-host.h-unified { height: 660px; }
+  .chart-host.h-shamela { height: 800px; }
+  .chart-host.h-aco     { height: 620px; }
+  .chart-host.h-unified { height: 720px; }
 }
+
+/* ─── Amiri for Arabic-script content ──────────────────── */
+
+.arabic,
+[dir="rtl"] {
+  font-family: 'Amiri', 'Georgia', serif;
+  font-size: 1.05em;
+}
+
+/* Specific places we know hold Arabic */
+.title-cell .arabic,
+.author-cell.arabic,
+.disc-cell.arabic,
+.topn-title.arabic,
+.topn-author.arabic {
+  font-family: 'Amiri', 'Georgia', serif;
+}
+
+/* Discipline filter dropdown — every option is Arabic */
+#b-discipline {
+  font-family: 'Amiri', 'Georgia', serif;
+  font-size: 0.95rem;
+}
+#b-discipline option { font-family: 'Amiri', 'Georgia', serif; }

@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Invisible Authorship in the Global Arabic Written Tradition — Corpus & Budget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,22 +20,22 @@
     <article class="tile">
       <div class="tile-value">29,908</div>
       <div class="tile-label">Records</div>
-      <div class="tile-sub">17,790 ACO · 11,578 ShamelaAY · 540 other</div>
+      <div class="tile-sub">17,790 ACO · 11,578 Shamela PDFs · 540 other</div>
     </article>
     <article class="tile">
       <div class="tile-value">~17,000</div>
       <div class="tile-label">Unique works</div>
-      <div class="tile-sub">12,554 ACO · 4,251 ShamelaAY (by work_id)</div>
+      <div class="tile-sub">12,554 ACO · 4,251 Shamela PDFs (by work_id)</div>
     </article>
     <article class="tile">
       <div class="tile-value">10.8 M</div>
       <div class="tile-label">Pages</div>
-      <div class="tile-sub">5.96 M ACO · 4.54 M ShamelaAY · 0.30 M other</div>
+      <div class="tile-sub">5.96 M ACO · 4.54 M Shamela PDFs · 0.30 M other</div>
     </article>
     <article class="tile">
       <div class="tile-value">90 GB</div>
       <div class="tile-label">Known file size</div>
-      <div class="tile-sub">ShamelaAY + personal_other (ACO sizes unknown)</div>
+      <div class="tile-sub">Shamela PDFs + personal_other (ACO sizes unknown)</div>
     </article>
   </section>
 
@@ -52,7 +55,7 @@
             <div class="scope-item">
               <div class="scope-label">Current corpus (Phase 1)</div>
               <div class="scope-value">10.8 M pages</div>
-              <div class="scope-sub">ACO + ShamelaAY + personal collection · 29,908 records</div>
+              <div class="scope-sub">ACO + Shamela PDFs + personal collection · 29,908 records</div>
             </div>
           </div>
 
@@ -416,7 +419,7 @@
       </aside>
     </div>
 
-    <p class="note">OCR pipeline architecture: open-weight vision-language models (Chandra-2, Qwen2.5-VL, InternVL3) deployed locally on owned hardware. Phase 1 infrastructure is a single NVIDIA DGX Spark (Grace-Blackwell, 128 GB unified memory; ~€5,000 hardware investment, hosted at BBAW server room as institutional infrastructure). Models are run in self-consensus mode (same model, multiple stochastic passes) and cross-model consensus, voting on disputed sentences only. LLM API access is used selectively for localized consensus resolution and header-coordinate detection (~€2,000 across the project lifetime). The 3-way diff verification interface simultaneously serves three purposes: quality assurance, generation of (image, text) training pairs in EIS1600 mARkdown format, and iterative fine-tuning of open-weight models calibrated for classical Arabic typography. Header and poetry structural tags are explicitly captured as primary annotation targets, supporting downstream computational analysis. Fine-tuning runs are executed on owned hardware or via no-cost academic compute clusters. By Phase 2, fine-tuned local models are projected to handle the majority of pages without consensus, reducing per-page processing time by 5–10× and producing a redistributable Arabic-OCR model as a public research output. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. ShamelaAY records are from the Shamela digital library. HathiTrust integration is planned for Phase 3 via direct partnership negotiation.</p>
+    <p class="note">OCR pipeline architecture: open-weight vision-language models (Chandra-2, Qwen2.5-VL, InternVL3) deployed locally on owned hardware. Phase 1 infrastructure is a single NVIDIA DGX Spark (Grace-Blackwell, 128 GB unified memory; ~€5,000 hardware investment, hosted at BBAW server room as institutional infrastructure). Models are run in self-consensus mode (same model, multiple stochastic passes) and cross-model consensus, voting on disputed sentences only. LLM API access is used selectively for localized consensus resolution and header-coordinate detection (~€2,000 across the project lifetime). The 3-way diff verification interface simultaneously serves three purposes: quality assurance, generation of (image, text) training pairs in EIS1600 mARkdown format, and iterative fine-tuning of open-weight models calibrated for classical Arabic typography. Header and poetry structural tags are explicitly captured as primary annotation targets, supporting downstream computational analysis. Fine-tuning runs are executed on owned hardware or via no-cost academic compute clusters. By Phase 2, fine-tuned local models are projected to handle the majority of pages without consensus, reducing per-page processing time by 5–10× and producing a redistributable Arabic-OCR model as a public research output. ACO holdings come from Arabic Collections Online, hosted by NYU Libraries (NYU Abu Dhabi), with contributing partners at AUB, AUC, Columbia, Cornell, Princeton, and the UAE National Archives. Shamela PDFs records are from the Shamela digital library. HathiTrust integration is planned for Phase 3 via direct partnership negotiation.</p>
   </section>
 
   <!-- ═══ Corpus at a glance ═══════════════════════════════ -->
@@ -493,7 +496,7 @@
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">ShamelaAY — emic disciplines (41 categories)</h3>
+      <h3 class="chart-title">Shamela PDFs — emic disciplines (41 categories)</h3>
       <p class="chart-caption">Shamela's tradition-internal classification — granular but inconsistent (e.g., author corpora as a category).</p>
       <div class="chart-host h-shamela"><canvas id="chart-shamela"></canvas></div>
     </div>
@@ -505,16 +508,16 @@
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs ShamelaAY</h3>
-      <p class="chart-caption">Coarse mapping of both schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where ShamelaAY has no equivalent.</p>
+      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs Shamela PDFs</h3>
+      <p class="chart-caption">Coarse mapping of both schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where Shamela PDFs has no equivalent.</p>
       <div class="chart-legend">
         <span class="lg-swatch lg-aco"></span> ACO
-        <span class="lg-swatch lg-shamela"></span> ShamelaAY
+        <span class="lg-swatch lg-shamela"></span> Shamela PDFs
       </div>
       <div class="chart-host h-unified"><canvas id="chart-unified"></canvas></div>
     </div>
 
-    <p class="interpretive" dir="ltr">These three views together demonstrate why neither existing classification scheme is adequate for the computational study of the Arabic written tradition. ShamelaAY over-specifies along confessional and authorial lines: madhhab-specific fiqh, dedicated author corpora (Ibn Taymiyya, al-Albānī, Ibn al-Qayyim, Ibn Abī al-Dunyā), and small subgenres that reflect the catalogers' theological priorities rather than the tradition's intellectual geography. The Library of Congress, applied to ACO, over-generalizes in the opposite direction: nearly 5,000 volumes (28% of the collection) collapse into a single "Philosophy, Psychology, Religion" bucket, fusing exegesis, ḥadīṯ studies, theology, law, devotional literature, and Sufism into one undifferentiated category. The mapping table above is a least-common-denominator alignment; the asymmetry between the two sources — particularly the size of the "(مختلط) / mixed" buckets — is itself the strongest argument that a computational typology, calibrated to the formal and rhetorical properties of the works themselves, is required for research on the tradition.</p>
+    <p class="interpretive" dir="ltr">These three views together demonstrate why neither existing classification scheme is adequate for the computational study of the Arabic written tradition. Shamela PDFs over-specifies along confessional and authorial lines: madhhab-specific fiqh, dedicated author corpora (Ibn Taymiyya, al-Albānī, Ibn al-Qayyim, Ibn Abī al-Dunyā), and small subgenres that reflect the catalogers' theological priorities rather than the tradition's intellectual geography. The Library of Congress, applied to ACO, over-generalizes in the opposite direction: nearly 5,000 volumes (28% of the collection) collapse into a single "Philosophy, Psychology, Religion" bucket, fusing exegesis, ḥadīṯ studies, theology, law, devotional literature, and Sufism into one undifferentiated category. The mapping table above is a least-common-denominator alignment; the asymmetry between the two sources — particularly the size of the "(مختلط) / mixed" buckets — is itself the strongest argument that a computational typology, calibrated to the formal and rhetorical properties of the works themselves, is required for research on the tradition.</p>
   </section>
 
   <!-- ═══ Corpus browser ═══════════════════════════════════ -->
@@ -534,7 +537,7 @@
           <select id="b-source" disabled>
             <option value="">All sources</option>
             <option value="aco">ACO</option>
-            <option value="shamela_ay">ShamelaAY</option>
+            <option value="shamela_ay">Shamela PDFs</option>
             <option value="personal_other">Personal / Other</option>
           </select>
         </label>
@@ -587,7 +590,7 @@
   </section>
 
   <footer class="page-footer">
-    <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + ShamelaAY + personal collections · 2026</p>
+    <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + Shamela PDFs + personal collections · 2026</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>

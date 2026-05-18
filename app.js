@@ -237,6 +237,10 @@ function escapeHtml(s) {
     .replaceAll("'", '&#39;');
 }
 
+const ARABIC_RE = /[؀-ۿݐ-ݿ]/;
+const isArabic   = (s) => s != null && ARABIC_RE.test(String(s));
+const arClass    = (s) => isArabic(s) ? ' arabic' : '';
+
 (async function loadCorpus() {
   try {
     const response = await fetch('data/corpus_merged.json');
@@ -271,7 +275,7 @@ function median(arr) {
 
 const SOURCE_LABELS = {
   aco:            'ACO',
-  shamela_ay:     'ShamelaAY',
+  shamela_ay:     'Shamela PDFs',
   personal_other: 'Personal / Other',
 };
 
@@ -400,8 +404,8 @@ function renderTopWorks(data) {
 
   $('top-works').innerHTML = works.map((w) => `
     <li>
-      <div class="topn-title" dir="auto">${escapeHtml(w.title)}</div>
-      <div class="topn-author${w.author ? '' : ' empty'}" dir="auto">${escapeHtml(w.author || '—')}</div>
+      <div class="topn-title${arClass(w.title)}" dir="auto">${escapeHtml(w.title)}</div>
+      <div class="topn-author${w.author ? arClass(w.author) : ' empty'}" dir="auto">${escapeHtml(w.author || '—')}</div>
       <div class="topn-counts" dir="ltr">${fmtN(w.count)} volumes · ${fmtN(w.pages)} pages</div>
     </li>
   `).join('');
@@ -416,8 +420,8 @@ function renderTopVolumes(data) {
 
   $('top-volumes').innerHTML = top.map((r) => `
     <li>
-      <div class="topn-title" dir="auto">${escapeHtml(r.title || '—')}</div>
-      <div class="topn-author${r.author ? '' : ' empty'}" dir="auto">${escapeHtml(r.author || '—')}</div>
+      <div class="topn-title${arClass(r.title)}" dir="auto">${escapeHtml(r.title || '—')}</div>
+      <div class="topn-author${r.author ? arClass(r.author) : ' empty'}" dir="auto">${escapeHtml(r.author || '—')}</div>
       <div class="topn-counts" dir="ltr">${fmtN(r.pages)} pages</div>
     </li>
   `).join('');
@@ -582,12 +586,12 @@ function rowHtml(r, expanded) {
       data-path="${escapeHtml(path)}" title="${escapeHtml(path) || 'no local path'}">${escapeHtml(r.title || '—')}</button>`;
   }
   return `<tr class="data-row${expanded ? ' expanded' : ''}" data-id="${escapeHtml(r.record_id)}">
-    <td class="title-cell">${titleHtml}</td>
-    <td class="author-cell" dir="auto">${escapeHtml(r.author || '—')}</td>
+    <td class="title-cell${arClass(r.title)}">${titleHtml}</td>
+    <td class="author-cell${arClass(r.author)}" dir="auto">${escapeHtml(r.author || '—')}</td>
     <td class="num">${r.pub_year != null ? r.pub_year : '—'}</td>
-    <td dir="auto">${escapeHtml(r.pub_place || '—')}</td>
+    <td class="${arClass(r.pub_place).trim()}" dir="auto">${escapeHtml(r.pub_place || '—')}</td>
     <td class="num">${typeof r.pages === 'number' ? fmtN(r.pages) : '—'}</td>
-    <td class="disc-cell" dir="auto">${escapeHtml(discipline)}</td>
+    <td class="disc-cell${arClass(discipline)}" dir="auto">${escapeHtml(discipline)}</td>
     <td>${sourceBadgeHtml(r.source)}</td>
   </tr>`;
 }
@@ -722,10 +726,143 @@ const BUCKET_TRANSLATIONS = {
   'العلوم الحديثة':           'Modern Subjects',
 };
 
-function bucketLabelForChart(arabic, lang) {
-  if (lang === 'ar') return arabic;
-  const en = BUCKET_TRANSLATIONS[arabic];
-  return en ? en.replace(/\*/g, '') : arabic;
+// ACO Library-of-Congress top-level Arabic labels → English (20 entries).
+const ACO_LC_TRANSLATIONS = {
+  'الفلسفة وعلم النفس والدين':                       'Philosophy, Psychology, Religion',
+  'اللغات والآداب':                                   'Language and Literature',
+  'تاريخ العالم وتاريخ أوروبا وآسيا وأفريقيا':         'World History (Europe, Asia, Africa, etc.)',
+  'القانون':                                          'Law',
+  'العلوم الاجتماعية':                                'Social Sciences',
+  'التعليم':                                          'Education',
+  'الببليوغرافيا ، وعلوم المكتبات ، والمعلومات العامة': 'Bibliography & Library Science',
+  'العلوم السياسية':                                  'Political Science',
+  'العلوم':                                           'Science',
+  'المعارف العامة':                                   'General Works',
+  'الجغرافيا والأنثربولوجيا والترفيه':                 'Geography, Anthropology, Recreation',
+  'العلوم الفرعية للتاريخ':                            'Auxiliary Sciences of History',
+  'الطب':                                             'Medicine',
+  'الفنون الجميلة':                                   'Fine Arts',
+  'الزراعة':                                          'Agriculture',
+  'التكنولوجيا':                                      'Technology',
+  'الموسيقى':                                         'Music',
+  'تاريخ أمريكا':                                     'History of the Americas',
+  'العلوم البحرية':                                   'Naval Science',
+  'العلوم العسكرية':                                  'Military Science',
+};
+
+// Shamela emic discipline labels → English (41 entries).
+const SHAMELA_NATIVE_TRANSLATIONS = {
+  'التفاسير':                          'Qurʾān Commentaries (*tafāsīr*)',
+  'علوم القرآن':                       'Qurʾānic Sciences',
+  'التجويد والقراءات':                 'Recitation & Variant Readings (*tajwīd* & *qirāʾāt*)',
+  'متون الحديث':                       'Ḥadīṯ Collections',
+  'شروح الحديث':                       'Ḥadīṯ Commentaries',
+  'علوم الحديث':                       'Ḥadīṯ Sciences',
+  'كتب التخريج والزوائد':              'Source-Tracing & Supplemental Ḥadīṯ',
+  'الأجزاء الحديثية':                  'Ḥadīṯ Booklets (*aǧzāʾ*)',
+  'العلل والسؤالات':                   'Defects & Inquiries (*ʿilal* & *suʾālāt*)',
+  'العقيدة':                           'Creed (*ʿaqīda*)',
+  'الفرق والردود':                     'Sects & Refutations',
+  'فقه عام':                           'General Jurisprudence',
+  'فقه شافعي':                         'Shāfiʿī Jurisprudence',
+  'فقه حنبلي':                         'Ḥanbalī Jurisprudence',
+  'فقه مالكي':                         'Mālikī Jurisprudence',
+  'فقه حنفي':                          'Ḥanafī Jurisprudence',
+  'الفتاوى':                           'Legal Opinions (*fatāwā*)',
+  'أصول الفقه والقواعد الفقهية':       'Legal Theory & Maxims',
+  'السياسة الشرعية والقضاء':           'Islamic Governance & Judiciary',
+  'الرقاق والآداب والأذكار':           'Piety, Etiquette & Litanies',
+  'الدعوة وأحوال المسلمين':            'Preaching & Muslim Affairs',
+  'التراجم والطبقات':                  'Biographical Dictionaries & Generations',
+  'السيرة والشمائل':                   'Prophetic Biography & Virtues',
+  'الأنساب':                          'Genealogy (*ansāb*)',
+  'التاريخ':                          'History',
+  'البلدان والجغرافيا والرحلات':       'Geography & Travel',
+  'النحو والصرف':                     'Grammar & Morphology',
+  'الغريب والمعاجم ولغة الفقه':        'Lexicography & Technical Vocabulary',
+  'كتب اللغة':                        'Linguistics',
+  'الأدب والبلاغة':                    'Literature & Rhetoric',
+  'الدواوين الشعرية':                 'Poetry Collections (*dīwāns*)',
+  'فهارس الكتب والأدلة':              'Bibliographic Indexes',
+  'الجوامع والمجلات ونحوها':          'Collections & Periodicals',
+  'بحوث ومسائل':                     'Studies & Treatises',
+  'علوم أخرى':                       'Other Disciplines',
+  'كتب إسلامية عامة':                 'General Islamic Works',
+  'محاضرات مفرغة':                   'Transcribed Lectures',
+  'كتب ابن تيمية':                   'Works of Ibn Taymiyya',
+  'كتب الألباني':                    'Works of al-Albānī',
+  'كتب ابن القيم':                   'Works of Ibn al-Qayyim',
+  'كتب ابن أبي الدنيا':               'Works of Ibn Abī al-Dunyā',
+};
+
+// Convert markdown-style *italic* runs into HTML <em>, escaping the rest.
+function processItalics(text) {
+  return String(text || '').split(/\*([^*]+)\*/g)
+    .map((p, i) => (i % 2 === 0) ? escapeHtml(p) : `<em>${escapeHtml(p)}</em>`)
+    .join('');
+}
+
+// Catalog sources sometimes store alef-hamza decomposed (U+0627 U+0654)
+// while our dictionaries use the composed form (U+0623). NFC-normalize both
+// sides for lookup; otherwise visually-identical strings fail to match.
+const _dictNFCCache = new WeakMap();
+function nfcDict(dict) {
+  let m = _dictNFCCache.get(dict);
+  if (!m) {
+    m = new Map();
+    for (const [k, v] of Object.entries(dict)) m.set(k.normalize('NFC'), v);
+    _dictNFCCache.set(dict, m);
+  }
+  return m;
+}
+
+// Build a bilingual label entry for an Arabic-source category.
+// `lang` selects which language is primary (the larger, weighted line).
+// If no translation exists, the source is shown as the only line (no secondary).
+function bilingualLabelEntry(arabicSource, dict, lang) {
+  const key = String(arabicSource || '').normalize('NFC');
+  const enRaw = nfcDict(dict).get(key);
+  if (!enRaw) {
+    return {
+      primary:       arabicSource,
+      primaryLang:   'ar',
+      primaryHtml:   escapeHtml(arabicSource),
+      secondary:     null,
+      secondaryLang: null,
+      secondaryHtml: '',
+    };
+  }
+  const enPlain = enRaw.replace(/\*/g, '');
+  if (lang === 'en') {
+    return {
+      primary:       enPlain,
+      primaryLang:   'en',
+      primaryHtml:   processItalics(enRaw),
+      secondary:     arabicSource,
+      secondaryLang: 'ar',
+      secondaryHtml: escapeHtml(arabicSource),
+    };
+  }
+  return {
+    primary:       arabicSource,
+    primaryLang:   'ar',
+    primaryHtml:   escapeHtml(arabicSource),
+    secondary:     enPlain,
+    secondaryLang: 'en',
+    secondaryHtml: processItalics(enRaw),
+  };
+}
+
+// "Other (N more)" — English only, no secondary line.
+function otherLabelEntry(label) {
+  return {
+    primary:       label,
+    primaryLang:   'en',
+    primaryHtml:   escapeHtml(label),
+    secondary:     null,
+    secondaryLang: null,
+    secondaryHtml: '',
+  };
 }
 
 // Bare numerics ("192", "462", etc.) leak into ACO discipline_native as
@@ -792,6 +929,62 @@ function aggregateDisciplines(data) {
   };
 }
 
+// Plugin: render Y-axis labels as HTML overlays so we can stack two languages
+// per row (primary + secondary), use Amiri for Arabic, and render *italic*
+// runs in English transliterated terms. Canvas can't do mixed-font runs in a
+// single label; HTML can.
+const bilingualLabelsPlugin = {
+  id: 'bilingualLabels',
+  afterDatasetsDraw(chart) {
+    const host = chart.canvas.parentElement;
+    if (!host) return;
+
+    let overlay = host.querySelector('.axis-labels-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'axis-labels-overlay';
+      host.appendChild(overlay);
+    }
+
+    const entries = chart.$labelEntries;
+    if (!entries || entries.length === 0) {
+      overlay.replaceChildren();
+      return;
+    }
+
+    const yAxis = chart.scales.y;
+    const chartAreaLeft = chart.chartArea.left;
+
+    overlay.style.width = chartAreaLeft + 'px';
+    overlay.replaceChildren();
+
+    entries.forEach((entry, i) => {
+      const y = yAxis.getPixelForTick(i);
+      if (y == null || isNaN(y)) return;
+
+      const div = document.createElement('div');
+      div.className = 'axis-label';
+      div.style.top = y + 'px';
+      div.style.right = '8px';
+      div.style.maxWidth = Math.max(60, chartAreaLeft - 16) + 'px';
+
+      const primaryEl = document.createElement('div');
+      primaryEl.className = 'al-primary ' + (entry.primaryLang || 'en');
+      primaryEl.innerHTML = entry.primaryHtml;
+      div.appendChild(primaryEl);
+
+      if (entry.secondaryHtml) {
+        const secondaryEl = document.createElement('div');
+        secondaryEl.className = 'al-secondary ' + (entry.secondaryLang || 'en');
+        secondaryEl.innerHTML = entry.secondaryHtml;
+        div.appendChild(secondaryEl);
+      }
+
+      overlay.appendChild(div);
+    });
+  },
+};
+
 // Plugin: render "1,234 (10.6%)" at the end of each bar.
 const endLabelPlugin = {
   id: 'endLabel',
@@ -823,14 +1016,16 @@ function topNWithOther(entries, metric, total, n) {
   const rest = sorted.slice(n);
   const restSum = rest.reduce((s, [, v]) => s + v[metric], 0);
 
-  const labels = top.map(([k]) => k);
-  const values = top.map(([, v]) => v[metric]);
+  const items = top.map(([k, v]) => ({ label: k, value: v[metric], isOther: false }));
   if (rest.length > 0) {
-    labels.push(`Other (${rest.length} more)`);
-    values.push(restSum);
+    items.push({ label: `Other (${rest.length} more)`, value: restSum, isOther: true });
   }
-  const pcts = values.map((v) => total > 0 ? (v / total) * 100 : 0);
-  return { labels, values, pcts };
+  return {
+    items,
+    labels: items.map((it) => it.label),
+    values: items.map((it) => it.value),
+    pcts:   items.map((it) => total > 0 ? (it.value / total) * 100 : 0),
+  };
 }
 
 function buildShamelaPayload(metric, agg) {
@@ -862,6 +1057,16 @@ function buildUnifiedPayload(metric, agg) {
   return { labels: UNIFIED_ORDER, acoData, shData, acoPcts, shPcts };
 }
 
+// Padding-left allocates room for the HTML-overlay axis labels.
+const AXIS_LABEL_AREA = 280;
+
+function bilingualTitleCallback(items) {
+  const chart = items[0].chart;
+  const entry = chart.$labelEntries?.[items[0].dataIndex];
+  if (!entry) return items[0].label;
+  return [entry.primary, entry.secondary].filter(Boolean);
+}
+
 function makeSingleBarChart(canvasId, color) {
   return new Chart(document.getElementById(canvasId), {
     type: 'bar',
@@ -871,11 +1076,12 @@ function makeSingleBarChart(canvasId, color) {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 300 },
-      layout: { padding: { right: 110, left: 4, top: 4, bottom: 4 } },
+      layout: { padding: { right: 110, left: AXIS_LABEL_AREA, top: 4, bottom: 4 } },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
+            title: bilingualTitleCallback,
             label: (ctx) => {
               const v = ctx.parsed.x;
               const pct = ctx.dataset.pcts?.[ctx.dataIndex];
@@ -896,11 +1102,11 @@ function makeSingleBarChart(canvasId, color) {
         y: {
           grid:   { display: false },
           border: { display: false },
-          ticks:  { font: { size: 12 }, color: '#1f1f1f', autoSkip: false },
+          ticks:  { callback: () => '', autoSkip: false },
         },
       },
     },
-    plugins: [endLabelPlugin],
+    plugins: [bilingualLabelsPlugin, endLabelPlugin],
   });
 }
 
@@ -919,11 +1125,12 @@ function makeUnifiedChart(canvasId) {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 300 },
-      layout: { padding: { right: 110, left: 4, top: 4, bottom: 4 } },
+      layout: { padding: { right: 110, left: AXIS_LABEL_AREA, top: 4, bottom: 4 } },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
+            title: bilingualTitleCallback,
             label: (ctx) => {
               const v = ctx.parsed.x;
               const pct = ctx.dataset.pcts?.[ctx.dataIndex];
@@ -942,11 +1149,11 @@ function makeUnifiedChart(canvasId) {
         y: {
           grid:   { display: false },
           border: { display: false },
-          ticks:  { font: { size: 12 }, color: '#1f1f1f', autoSkip: false },
+          ticks:  { callback: () => '', autoSkip: false },
         },
       },
     },
-    plugins: [endLabelPlugin],
+    plugins: [bilingualLabelsPlugin, endLabelPlugin],
   });
 }
 
@@ -997,23 +1204,34 @@ function initDisciplineCharts(data) {
   updateDisciplineCharts();
 }
 
+function entriesFromPayload(payload, dict, lang) {
+  return payload.items.map((it) =>
+    it.isOther ? otherLabelEntry(it.label) : bilingualLabelEntry(it.label, dict, lang)
+  );
+}
+
 function updateDisciplineCharts() {
   const m = DISC.metric;
+  const lang = DISC.lang;
 
   const s = buildShamelaPayload(m, DISC.agg);
-  DISC.charts.shamela.data.labels = s.labels;
+  DISC.charts.shamela.$labelEntries = entriesFromPayload(s, SHAMELA_NATIVE_TRANSLATIONS, lang);
+  DISC.charts.shamela.data.labels = DISC.charts.shamela.$labelEntries.map((e) => e.primary);
   DISC.charts.shamela.data.datasets[0].data = s.values;
   DISC.charts.shamela.data.datasets[0].pcts = s.pcts;
   DISC.charts.shamela.update();
 
   const a = buildAcoPayload(m, DISC.agg);
-  DISC.charts.aco.data.labels = a.labels;
+  DISC.charts.aco.$labelEntries = entriesFromPayload(a, ACO_LC_TRANSLATIONS, lang);
+  DISC.charts.aco.data.labels = DISC.charts.aco.$labelEntries.map((e) => e.primary);
   DISC.charts.aco.data.datasets[0].data = a.values;
   DISC.charts.aco.data.datasets[0].pcts = a.pcts;
   DISC.charts.aco.update();
 
   const u = buildUnifiedPayload(m, DISC.agg);
-  DISC.charts.unified.data.labels = UNIFIED_ORDER.map((k) => bucketLabelForChart(k, DISC.lang));
+  DISC.charts.unified.$labelEntries =
+    UNIFIED_ORDER.map((k) => bilingualLabelEntry(k, BUCKET_TRANSLATIONS, lang));
+  DISC.charts.unified.data.labels = DISC.charts.unified.$labelEntries.map((e) => e.primary);
   DISC.charts.unified.data.datasets[0].data = u.acoData;
   DISC.charts.unified.data.datasets[0].pcts = u.acoPcts;
   DISC.charts.unified.data.datasets[1].data = u.shData;
