@@ -243,6 +243,7 @@ function escapeHtml(s) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     initStatsPanel(data);
+    initDisciplineCharts(data);
     initBrowser(data);
   } catch (err) {
     console.error('Failed to load corpus:', err);
@@ -673,4 +674,306 @@ function handleBrowseClick(e) {
   if (BROWSER.expanded.has(id)) BROWSER.expanded.delete(id);
   else                          BROWSER.expanded.add(id);
   renderBrowseTable();
+}
+
+// ═══════════════════════════════════════════════════════════
+//   Layer 2 — Discipline distribution charts
+// ═══════════════════════════════════════════════════════════
+
+const SHAMELA_BAR = '#6a9a76';
+const ACO_BAR     = '#5d7da6';
+
+const UNIFIED_ORDER = [
+  'علوم القرآن',
+  'علوم الحديث',
+  'العقيدة والكلام',
+  'الفقه وأصوله',
+  'الرقاق والدعوة',
+  'التراجم والسيرة',
+  'التاريخ والجغرافيا',
+  'اللغة والمعاجم',
+  'الأدب والبلاغة',
+  'المراجع والمجاميع',
+  'مجاميع المؤلفين',
+  'الفلسفة والدين (مختلط)',
+  'اللغات والآداب (مختلط)',
+  'العلوم الحديثة',
+];
+
+// Bare numerics ("192", "462", etc.) leak into ACO discipline_native as
+// singletons. They're cataloging noise — strip them out of the charts.
+function looksLikeJunkCategory(label) {
+  if (label == null) return true;
+  const t = String(label).trim();
+  if (t.length === 0) return true;
+  if (/^[0-9\s_\-.]+$/.test(t)) return true;
+  return false;
+}
+
+function aggregateDisciplines(data) {
+  const fresh = () => ({ pdfs: 0, works: new Set() });
+  const sN = new Map(), aN = new Map();
+  const sU = new Map(), aU = new Map();
+  const sWorks = new Set(), aWorks = new Set();
+  let sPdfs = 0, aPdfs = 0;
+
+  for (const r of data) {
+    if (r.source === 'shamela_ay') {
+      sPdfs++;
+      if (r.work_id) sWorks.add(r.work_id);
+      if (r.discipline_native) {
+        if (!sN.has(r.discipline_native)) sN.set(r.discipline_native, fresh());
+        const v = sN.get(r.discipline_native);
+        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
+      }
+      if (r.discipline_normalized) {
+        if (!sU.has(r.discipline_normalized)) sU.set(r.discipline_normalized, fresh());
+        const v = sU.get(r.discipline_normalized);
+        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
+      }
+    } else if (r.source === 'aco') {
+      aPdfs++;
+      if (r.work_id) aWorks.add(r.work_id);
+      if (r.discipline_native) {
+        if (!aN.has(r.discipline_native)) aN.set(r.discipline_native, fresh());
+        const v = aN.get(r.discipline_native);
+        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
+      }
+      if (r.discipline_normalized) {
+        if (!aU.has(r.discipline_normalized)) aU.set(r.discipline_normalized, fresh());
+        const v = aU.get(r.discipline_normalized);
+        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
+      }
+    }
+  }
+
+  const flatten = (m) => {
+    const out = new Map();
+    for (const [k, v] of m) out.set(k, { pdfs: v.pdfs, works: v.works.size });
+    return out;
+  };
+  return {
+    shamelaNative:  flatten(sN),
+    acoNative:      flatten(aN),
+    shamelaUnified: flatten(sU),
+    acoUnified:     flatten(aU),
+    totals: {
+      shamela: { pdfs: sPdfs, works: sWorks.size },
+      aco:     { pdfs: aPdfs, works: aWorks.size },
+    },
+  };
+}
+
+// Plugin: render "1,234 (10.6%)" at the end of each bar.
+const endLabelPlugin = {
+  id: 'endLabel',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#1f1f1f';
+    chart.data.datasets.forEach((dataset, di) => {
+      const meta = chart.getDatasetMeta(di);
+      meta.data.forEach((bar, i) => {
+        const value = dataset.data[i];
+        if (value == null || value === 0) return;
+        const pct = dataset.pcts?.[i];
+        const text = pct != null
+          ? `${value.toLocaleString()} (${pct.toFixed(1)}%)`
+          : value.toLocaleString();
+        ctx.fillText(text, bar.x + 6, bar.y);
+      });
+    });
+    ctx.restore();
+  },
+};
+
+function topNWithOther(entries, metric, total, n) {
+  const sorted = entries.slice().sort((a, b) => b[1][metric] - a[1][metric]);
+  const top = sorted.slice(0, n);
+  const rest = sorted.slice(n);
+  const restSum = rest.reduce((s, [, v]) => s + v[metric], 0);
+
+  const labels = top.map(([k]) => k);
+  const values = top.map(([, v]) => v[metric]);
+  if (rest.length > 0) {
+    labels.push(`Other (${rest.length} more)`);
+    values.push(restSum);
+  }
+  const pcts = values.map((v) => total > 0 ? (v / total) * 100 : 0);
+  return { labels, values, pcts };
+}
+
+function buildShamelaPayload(metric, agg) {
+  const entries = [...agg.shamelaNative.entries()];
+  const total = agg.totals.shamela[metric];
+  return topNWithOther(entries, metric, total, 20);
+}
+
+function buildAcoPayload(metric, agg) {
+  const entries = [...agg.acoNative.entries()].filter(([k]) => !looksLikeJunkCategory(k));
+  const total = agg.totals.aco[metric];
+  return topNWithOther(entries, metric, total, 15);
+}
+
+function buildUnifiedPayload(metric, agg) {
+  const acoTot = agg.totals.aco[metric];
+  const shTot  = agg.totals.shamela[metric];
+  const acoData = [], shData = [], acoPcts = [], shPcts = [];
+  for (const k of UNIFIED_ORDER) {
+    const a = agg.acoUnified.get(k);
+    const s = agg.shamelaUnified.get(k);
+    const av = a ? a[metric] : 0;
+    const sv = s ? s[metric] : 0;
+    acoData.push(av);
+    shData.push(sv);
+    acoPcts.push(acoTot > 0 ? (av / acoTot) * 100 : 0);
+    shPcts.push (shTot  > 0 ? (sv / shTot ) * 100 : 0);
+  }
+  return { labels: UNIFIED_ORDER, acoData, shData, acoPcts, shPcts };
+}
+
+function makeSingleBarChart(canvasId, color) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ data: [], pcts: [], backgroundColor: color, borderRadius: 2, borderSkipped: false }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      layout: { padding: { right: 110, left: 4, top: 4, bottom: 4 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.x;
+              const pct = ctx.dataset.pcts?.[ctx.dataIndex];
+              return pct != null
+                ? `${v.toLocaleString()}  (${pct.toFixed(1)}% of source)`
+                : v.toLocaleString();
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid:   { color: 'rgba(0,0,0,0.06)' },
+          border: { display: false },
+          ticks:  { font: { size: 11 }, color: '#6b6b6b' },
+        },
+        y: {
+          grid:   { display: false },
+          border: { display: false },
+          ticks:  { font: { size: 12 }, color: '#1f1f1f', autoSkip: false },
+        },
+      },
+    },
+    plugins: [endLabelPlugin],
+  });
+}
+
+function makeUnifiedChart(canvasId) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels: UNIFIED_ORDER,
+      datasets: [
+        { label: 'ACO',     data: [], pcts: [], backgroundColor: ACO_BAR,     borderRadius: 2, borderSkipped: false },
+        { label: 'Shamela', data: [], pcts: [], backgroundColor: SHAMELA_BAR, borderRadius: 2, borderSkipped: false },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      layout: { padding: { right: 110, left: 4, top: 4, bottom: 4 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.x;
+              const pct = ctx.dataset.pcts?.[ctx.dataIndex];
+              return `${ctx.dataset.label}: ${v.toLocaleString()}  (${pct != null ? pct.toFixed(1) : '0.0'}% of source)`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid:   { color: 'rgba(0,0,0,0.06)' },
+          border: { display: false },
+          ticks:  { font: { size: 11 }, color: '#6b6b6b' },
+        },
+        y: {
+          grid:   { display: false },
+          border: { display: false },
+          ticks:  { font: { size: 12 }, color: '#1f1f1f', autoSkip: false },
+        },
+      },
+    },
+    plugins: [endLabelPlugin],
+  });
+}
+
+const DISC = { agg: null, charts: null, metric: 'pdfs' };
+
+function initDisciplineCharts(data) {
+  if (typeof Chart === 'undefined') {
+    document.getElementById('discipline-panel').insertAdjacentHTML('beforeend',
+      '<p class="loading-cell">Chart.js failed to load — discipline charts unavailable.</p>');
+    return;
+  }
+
+  DISC.agg = aggregateDisciplines(data);
+  DISC.charts = {
+    shamela: makeSingleBarChart('chart-shamela', SHAMELA_BAR),
+    aco:     makeSingleBarChart('chart-aco',     ACO_BAR),
+    unified: makeUnifiedChart  ('chart-unified'),
+  };
+
+  document.querySelectorAll('.metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.metric;
+      if (next === DISC.metric) return;
+      DISC.metric = next;
+      document.querySelectorAll('.metric-btn').forEach((b) => {
+        const on = b.dataset.metric === next;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      updateDisciplineCharts();
+    });
+  });
+
+  updateDisciplineCharts();
+}
+
+function updateDisciplineCharts() {
+  const m = DISC.metric;
+
+  const s = buildShamelaPayload(m, DISC.agg);
+  DISC.charts.shamela.data.labels = s.labels;
+  DISC.charts.shamela.data.datasets[0].data = s.values;
+  DISC.charts.shamela.data.datasets[0].pcts = s.pcts;
+  DISC.charts.shamela.update();
+
+  const a = buildAcoPayload(m, DISC.agg);
+  DISC.charts.aco.data.labels = a.labels;
+  DISC.charts.aco.data.datasets[0].data = a.values;
+  DISC.charts.aco.data.datasets[0].pcts = a.pcts;
+  DISC.charts.aco.update();
+
+  const u = buildUnifiedPayload(m, DISC.agg);
+  DISC.charts.unified.data.datasets[0].data = u.acoData;
+  DISC.charts.unified.data.datasets[0].pcts = u.acoPcts;
+  DISC.charts.unified.data.datasets[1].data = u.shData;
+  DISC.charts.unified.data.datasets[1].pcts = u.shPcts;
+  DISC.charts.unified.update();
 }

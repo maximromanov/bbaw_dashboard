@@ -1127,3 +1127,105 @@ input[type=number]:focus {
   .detail-panel dl { grid-template-columns: 1fr; gap: 2px 0; }
   .detail-panel dt { margin-top: 8px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Layer 2 — Discipline distribution charts
+   ═══════════════════════════════════════════════════════════ */
+
+.metric-toggle {
+  display: inline-flex;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.metric-btn {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border: none;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  border-right: 1px solid var(--border-strong);
+  transition: background 0.12s, color 0.12s;
+}
+.metric-btn:last-child { border-right: none; }
+.metric-btn:hover:not(.active) { background: var(--accent-soft); }
+.metric-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.chart-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px 16px;
+  margin-bottom: 22px;
+  background: var(--bg);
+}
+.chart-card:last-of-type { margin-bottom: 0; }
+
+.chart-title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+.chart-caption {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.chart-legend {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.chart-legend .lg-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 4px;
+  margin-left: 12px;
+}
+.chart-legend .lg-swatch:first-child { margin-left: 0; }
+.lg-aco     { background: #5d7da6; }
+.lg-shamela { background: #6a9a76; }
+
+.chart-host {
+  position: relative;
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 10px;
+  border: 1px solid var(--border);
+}
+.chart-host.h-shamela { height: 680px; }
+.chart-host.h-aco     { height: 540px; }
+.chart-host.h-unified { height: 760px; }
+
+.interpretive {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text);
+  max-width: 84ch;
+}
+
+@media (max-width: 720px) {
+  .chart-host.h-shamela { height: 600px; }
+  .chart-host.h-aco     { height: 480px; }
+  .chart-host.h-unified { height: 660px; }
+}

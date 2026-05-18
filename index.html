@@ -474,6 +474,43 @@
     </div>
   </section>
 
+  <!-- ═══ Discipline distributions (Layer 2) ══════════════ -->
+  <section class="info-panel" id="discipline-panel" aria-labelledby="discipline-heading">
+    <div class="section-header">
+      <h2 id="discipline-heading">Corpus composition — discipline distribution</h2>
+      <p>Three views of the same corpus, revealing why computational typology is necessary.</p>
+    </div>
+
+    <div class="metric-toggle" role="radiogroup" aria-label="Metric to display">
+      <button type="button" class="metric-btn active" data-metric="pdfs" aria-pressed="true">PDF volumes</button>
+      <button type="button" class="metric-btn" data-metric="works" aria-pressed="false">Unique works</button>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">ShamelaAY — emic disciplines (41 categories)</h3>
+      <p class="chart-caption">Shamela's tradition-internal classification — granular but inconsistent (e.g., author corpora as a category).</p>
+      <div class="chart-host h-shamela"><canvas id="chart-shamela"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">ACO — Library of Congress top-level (~20 real categories)</h3>
+      <p class="chart-caption">Western library classification — collapses tafsīr, ḥadīṯ, fiqh, kalām, and devotional literature into a single "Religion" bucket (~28% of all ACO records).</p>
+      <div class="chart-host h-aco"><canvas id="chart-aco"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs ShamelaAY</h3>
+      <p class="chart-caption">Coarse mapping of both schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where ShamelaAY has no equivalent.</p>
+      <div class="chart-legend">
+        <span class="lg-swatch lg-aco"></span> ACO
+        <span class="lg-swatch lg-shamela"></span> ShamelaAY
+      </div>
+      <div class="chart-host h-unified"><canvas id="chart-unified"></canvas></div>
+    </div>
+
+    <p class="interpretive" dir="ltr">These three views together demonstrate why neither existing classification scheme is adequate for the computational study of the Arabic written tradition. ShamelaAY over-specifies along confessional and authorial lines: madhhab-specific fiqh, dedicated author corpora (Ibn Taymiyya, al-Albānī, Ibn al-Qayyim, Ibn Abī al-Dunyā), and small subgenres that reflect the catalogers' theological priorities rather than the tradition's intellectual geography. The Library of Congress, applied to ACO, over-generalizes in the opposite direction: nearly 5,000 volumes (28% of the collection) collapse into a single "Philosophy, Psychology, Religion" bucket, fusing exegesis, ḥadīṯ studies, theology, law, devotional literature, and Sufism into one undifferentiated category. The mapping table above is a least-common-denominator alignment; the asymmetry between the two sources — particularly the size of the "(مختلط) / mixed" buckets — is itself the strongest argument that a computational typology, calibrated to the formal and rhetorical properties of the works themselves, is required for research on the tradition.</p>
+  </section>
+
   <!-- ═══ Corpus browser ═══════════════════════════════════ -->
   <section class="info-panel" id="browser-panel" aria-labelledby="browser-heading">
     <div class="section-header">
@@ -548,6 +585,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="app.js"></script>
 </body>
 </html>
