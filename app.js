@@ -26,17 +26,24 @@ const ARABIC_RE = /[؀-ۿݐ-ݿ]/;
 const isArabic   = (s) => s != null && ARABIC_RE.test(String(s));
 const arClass    = (s) => isArabic(s) ? ' arabic' : '';
 
-(async function loadCorpus() {
+// ── Two-tier loading ───────────────────────────────────────
+// Tier 1 (boot): fetch the small precomputed summary.json and render
+//   Layer 1 (breakdown/histogram/top-N) and Layer 2 (discipline charts).
+// Tier 2 (on demand): fetch the full corpus_merged.json and build the
+//   MiniSearch index when the user first interacts with the browser
+//   (search-box focus, first keystroke, or the panel scrolls into view).
+
+(async function loadSummary() {
   try {
-    const response = await fetch('data/corpus_merged.json');
+    const response = await fetch('data/summary.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    initStatsPanel(data);
-    initDisciplineCharts(data);
-    initBrowser(data);
+    const summary = await response.json();
+    initStatsPanel(summary);
+    initDisciplineCharts(summary);
+    initBrowserPlaceholder(summary);
   } catch (err) {
-    console.error('Failed to load corpus:', err);
-    const msg = `Could not load corpus_merged.json (${err.message}). Serve over HTTP — file:// access is blocked by the browser.`;
+    console.error('Failed to load summary:', err);
+    const msg = `Could not load summary.json (${err.message}). Serve over HTTP — file:// access is blocked by the browser.`;
     $('breakdown-body').innerHTML =
       `<tr><td colspan="6" class="loading-cell">${escapeHtml(msg)}</td></tr>`;
     $('histogram').innerHTML       = `<div class="loading-cell">${escapeHtml(msg)}</div>`;
@@ -48,15 +55,8 @@ const arClass    = (s) => isArabic(s) ? ' arabic' : '';
 })();
 
 // ═══════════════════════════════════════════════════════════
-//   A · Corpus at a glance — stats panel
+//   A · Corpus at a glance — stats panel (renders from summary.json)
 // ═══════════════════════════════════════════════════════════
-
-function median(arr) {
-  if (!arr.length) return null;
-  const s = [...arr].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
-}
 
 const SOURCE_LABELS = {
   aco:            'ACO',
@@ -65,50 +65,32 @@ const SOURCE_LABELS = {
   personal_other: 'Personal / Other',
 };
 
-function initStatsPanel(data) {
-  renderBreakdownTable(data);
-  renderHistogram(data);
-  renderTopWorks(data);
-  renderTopVolumes(data);
+function initStatsPanel(summary) {
+  renderBreakdownTable(summary.per_source, summary.totals);
+  renderHistogram(summary.histogram);
+  renderTopWorks(summary.top_works);
+  renderTopVolumes(summary.top_volumes);
 }
 
-function renderBreakdownTable(data) {
-  const rows = [];
-  let totalVols = 0, totalPages = 0, totalWorks = 0;
-  const allPagesGlobal = [];
-
-  for (const src of ['aco', 'shamela_ay', 'waqfeya', 'personal_other']) {
-    const recs = data.filter((r) => r.source === src);
-    const withPages = recs.map((r) => r.pages).filter((p) => typeof p === 'number' && p > 0);
-    const workIds = new Set(recs.map((r) => r.work_id).filter(Boolean));
-    const sumPages = withPages.reduce((a, b) => a + b, 0);
-    const avg = withPages.length ? Math.round(sumPages / withPages.length) : null;
-    const med = median(withPages);
-
-    rows.push({
-      label: SOURCE_LABELS[src],
-      vols:  recs.length,
-      works: workIds.size,
-      pages: sumPages,
-      avg,
-      median: med,
-      hasWorks: src !== 'personal_other',
-    });
-    totalVols += recs.length;
-    totalPages += sumPages;
-    totalWorks += workIds.size;
-    allPagesGlobal.push(...withPages);
-  }
-
+function renderBreakdownTable(perSource, totals) {
+  const rows = perSource.map((s) => ({
+    label:    s.label,
+    vols:     s.records,
+    works:    s.works,
+    pages:    s.pages,
+    avg:      s.avg_pp,
+    median:   s.median_pp,
+    hasWorks: s.has_works,
+  }));
   rows.push({
-    label: 'TOTAL',
-    vols:  totalVols,
-    works: totalWorks,
-    pages: totalPages,
-    avg:   Math.round(totalPages / allPagesGlobal.length),
-    median: median(allPagesGlobal),
+    label:    'TOTAL',
+    vols:     totals.records,
+    works:    totals.works,
+    pages:    totals.pages,
+    avg:      totals.avg_pp,
+    median:   totals.median_pp,
     hasWorks: true,
-    isTotal: true,
+    isTotal:  true,
   });
 
   $('breakdown-body').innerHTML = rows.map((r) => `
@@ -123,21 +105,7 @@ function renderBreakdownTable(data) {
   `).join('');
 }
 
-function renderHistogram(data) {
-  const bins = [
-    { label: '0 – 100',       min: 0,    max: 100,      count: 0 },
-    { label: '101 – 300',     min: 101,  max: 300,      count: 0 },
-    { label: '301 – 500',     min: 301,  max: 500,      count: 0 },
-    { label: '501 – 1,000',   min: 501,  max: 1000,     count: 0 },
-    { label: '1,001 – 3,000', min: 1001, max: 3000,     count: 0 },
-    { label: '3,001 +',       min: 3001, max: Infinity, count: 0 },
-  ];
-  for (const r of data) {
-    if (typeof r.pages !== 'number' || r.pages <= 0) continue;
-    for (const b of bins) {
-      if (r.pages >= b.min && r.pages <= b.max) { b.count++; break; }
-    }
-  }
+function renderHistogram(bins) {
   const maxCount = Math.max(...bins.map((b) => b.count), 1);
   $('histogram').innerHTML = bins.map((b) => `
     <div class="hist-bin">
@@ -148,47 +116,8 @@ function renderHistogram(data) {
   `).join('');
 }
 
-// True when the title field looks like a catalog code or volume designation
-// rather than a human-readable Arabic title. Used ONLY to clean up the
-// "Largest works" and "Longest individual volumes" display lists — junk-titled
-// records remain in the headline tiles, breakdown table, histogram, and the
-// search/filter browser (researchers may still need to find them by code).
-function looksLikeJunkTitle(title) {
-  if (title == null) return true;
-  const t = String(title).trim();
-  if (t.length < 6) return true;
-  if (!/[؀-ۿݐ-ݿ]/.test(t)) return true;
-  if (/^[0-9\s_\-.]+$/.test(t)) return true;
-  return false;
-}
-
-function renderTopWorks(data) {
-  const byWork = new Map();
-  for (const r of data) {
-    if (!r.work_id) continue;
-    let w = byWork.get(r.work_id);
-    if (!w) {
-      w = { count: 0, pages: 0, titles: [], author: '' };
-      byWork.set(r.work_id, w);
-    }
-    w.count++;
-    if (typeof r.pages === 'number' && r.pages > 0) w.pages += r.pages;
-    if (r.title) w.titles.push(r.title);
-    if (!w.author && r.author) w.author = r.author;
-  }
-
-  const works = [...byWork.values()]
-    .map((w) => {
-      const clean = w.titles.filter((t) => !looksLikeJunkTitle(t));
-      if (clean.length === 0) return null;
-      const title = clean.reduce((a, b) => (b.length > a.length ? b : a));
-      return { count: w.count, pages: w.pages, author: w.author, title };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.count - a.count || b.pages - a.pages)
-    .slice(0, 10);
-
-  $('top-works').innerHTML = works.map((w) => `
+function renderTopWorks(topWorks) {
+  $('top-works').innerHTML = topWorks.map((w) => `
     <li>
       <div class="topn-title${arClass(w.title)}" dir="auto">${escapeHtml(w.title)}</div>
       <div class="topn-author${w.author ? arClass(w.author) : ' empty'}" dir="auto">${escapeHtml(w.author || '—')}</div>
@@ -197,14 +126,8 @@ function renderTopWorks(data) {
   `).join('');
 }
 
-function renderTopVolumes(data) {
-  const top = data
-    .filter((r) => typeof r.pages === 'number' && r.pages > 0)
-    .filter((r) => !looksLikeJunkTitle(r.title))
-    .sort((a, b) => b.pages - a.pages)
-    .slice(0, 10);
-
-  $('top-volumes').innerHTML = top.map((r) => `
+function renderTopVolumes(topVolumes) {
+  $('top-volumes').innerHTML = topVolumes.map((r) => `
     <li>
       <div class="topn-title${arClass(r.title)}" dir="auto">${escapeHtml(r.title || '—')}</div>
       <div class="topn-author${r.author ? arClass(r.author) : ' empty'}" dir="auto">${escapeHtml(r.author || '—')}</div>
@@ -228,11 +151,91 @@ const BROWSER = {
   query:    '',
 };
 
+// At Tier 1 boot: populate the dropdowns from summary.json, show a
+// friendly placeholder, and wire up the triggers that lazy-load the
+// full corpus on first user interaction with the browser panel.
+function initBrowserPlaceholder(summary) {
+  BROWSER.totalRecordsExpected = summary.totals.records;
+
+  // Populate discipline filter dropdown — counts come precomputed.
+  const discSelect = $('b-discipline');
+  for (const opt of summary.discipline_filter_options) {
+    const o = document.createElement('option');
+    o.value = opt.label;
+    o.textContent = `${opt.label} (${fmtN(opt.count)})`;
+    discSelect.appendChild(o);
+  }
+
+  // Source dropdown is hardcoded in HTML; annotate it with the counts.
+  if (Array.isArray(summary.source_filter_options)) {
+    for (const opt of summary.source_filter_options) {
+      const optionEl = document.querySelector(`#b-source option[value="${opt.value}"]`);
+      if (optionEl) optionEl.textContent = `${opt.label} (${fmtN(opt.count)})`;
+    }
+  }
+
+  $('b-summary').innerHTML =
+    `<strong>${fmtN(summary.totals.records)}</strong> records ready · ` +
+    `<span class="hint">search and filters activate on first interaction</span>`;
+  $('browse-body').innerHTML =
+    `<tr><td colspan="7" class="loading-cell">Focus the search box, scroll here, or tap a filter to load the full corpus.</td></tr>`;
+
+  // Trigger Tier 2 load on first browser-panel interaction.
+  const trigger = () => { ensureCorpusLoaded(); };
+  const search = $('b-search');
+  search.addEventListener('focus', trigger, { once: true });
+  search.addEventListener('input', trigger, { once: true });
+
+  // Scroll-into-view: pre-warm the corpus as the user reaches the panel.
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          obs.disconnect();
+          trigger();
+          break;
+        }
+      }
+    }, { rootMargin: '200px' });
+    obs.observe($('browser-panel'));
+  }
+
+  // Delegated click handler is safe to wire now — until corpus loads it
+  // has nothing to act on, but registering early avoids a re-bind later.
+  $('browse-body').addEventListener('click', handleBrowseClick);
+}
+
+let _corpusLoadPromise = null;
+
+async function ensureCorpusLoaded() {
+  if (_corpusLoadPromise) return _corpusLoadPromise;
+  $('b-summary').innerHTML =
+    `<span class="loading-pulse">Loading corpus and building search index…</span>`;
+  $('browse-body').innerHTML =
+    `<tr><td colspan="7" class="loading-cell">Loading ${fmtN(BROWSER.totalRecordsExpected || 0)} records…</td></tr>`;
+
+  _corpusLoadPromise = (async () => {
+    const response = await fetch('data/corpus_merged.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    initBrowser(data);
+  })();
+
+  try {
+    await _corpusLoadPromise;
+  } catch (err) {
+    console.error('Failed to load corpus:', err);
+    $('b-summary').textContent = `Could not load corpus_merged.json: ${err.message}`;
+    _corpusLoadPromise = null;  // allow retry on next interaction
+  }
+  return _corpusLoadPromise;
+}
+
 function initBrowser(data) {
   BROWSER.data = data;
   BROWSER.byId = new Map(data.map((r) => [r.record_id, r]));
 
-  // Build MiniSearch index
+  // Build MiniSearch index from the freshly-loaded corpus.
   BROWSER.index = new MiniSearch({
     idField: 'record_id',
     fields: ['title', 'author', 'publisher', 'pub_place',
@@ -254,26 +257,13 @@ function initBrowser(data) {
     discipline_normalized: r.discipline_normalized || '',
   })));
 
-  // Populate discipline filter dropdown
-  const counts = new Map();
-  for (const r of data) {
-    const key = r.discipline_normalized || '(unmapped)';
-    counts.set(key, (counts.get(key) || 0) + 1);
-  }
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  const select = $('b-discipline');
-  for (const [d, c] of sorted) {
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = `${d} (${fmtN(c)})`;
-    select.appendChild(opt);
-  }
-
-  // Enable controls
+  // Enable controls.
   ['b-search', 'b-source', 'b-discipline', 'b-year-from', 'b-year-to',
    'b-prev', 'b-next'].forEach((id) => { $(id).disabled = false; });
 
-  // Wire events
+  // Wire events. The Tier-1 placeholder added `once: true` focus/input
+  // hooks for lazy-load; here we add the persistent search debounce that
+  // drives subsequent typing.
   let searchTimer;
   $('b-search').addEventListener('input', () => {
     clearTimeout(searchTimer);
@@ -295,9 +285,9 @@ function initBrowser(data) {
     if (BROWSER.page < maxPage) { BROWSER.page++; renderBrowseTable(); }
   });
 
-  // Delegated click handler for rows + title buttons
-  $('browse-body').addEventListener('click', handleBrowseClick);
-
+  // Pick up any value the user typed during the load (in case they typed
+  // before the corpus arrived).
+  BROWSER.query = $('b-search').value.trim();
   applyFilters();
 }
 
@@ -703,51 +693,22 @@ function looksLikeJunkCategory(label) {
   return false;
 }
 
-function aggregateDisciplines(data) {
-  const fresh = () => ({ pdfs: 0, works: new Set() });
-
-  // Per-source per-discipline maps for both the native and unified axes.
-  const acc = {
-    aco:        { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
-    shamela_ay: { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
-    waqfeya:    { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
-  };
-
-  for (const r of data) {
-    const bucket = acc[r.source];
-    if (!bucket) continue;  // personal_other has no disciplines
-    bucket.pdfs++;
-    if (r.work_id) bucket.works.add(r.work_id);
-
-    if (r.discipline_native) {
-      if (!bucket.native.has(r.discipline_native)) bucket.native.set(r.discipline_native, fresh());
-      const v = bucket.native.get(r.discipline_native);
-      v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-    }
-    if (r.discipline_normalized) {
-      if (!bucket.unified.has(r.discipline_normalized)) bucket.unified.set(r.discipline_normalized, fresh());
-      const v = bucket.unified.get(r.discipline_normalized);
-      v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-    }
-  }
-
-  const flatten = (m) => {
-    const out = new Map();
-    for (const [k, v] of m) out.set(k, { pdfs: v.pdfs, works: v.works.size });
-    return out;
+// Reshape the precomputed `disciplines` block from summary.json into the
+// Map<label, {pdfs, works}> structures the chart machinery expects.
+function disciplinesFromSummary(disciplines) {
+  const toMap = (arr) => {
+    const m = new Map();
+    for (const it of arr) m.set(it.label, { pdfs: it.pdfs, works: it.works });
+    return m;
   };
   return {
-    shamelaNative:  flatten(acc.shamela_ay.native),
-    acoNative:      flatten(acc.aco.native),
-    waqfeyaNative:  flatten(acc.waqfeya.native),
-    shamelaUnified: flatten(acc.shamela_ay.unified),
-    acoUnified:     flatten(acc.aco.unified),
-    waqfeyaUnified: flatten(acc.waqfeya.unified),
-    totals: {
-      shamela: { pdfs: acc.shamela_ay.pdfs, works: acc.shamela_ay.works.size },
-      aco:     { pdfs: acc.aco.pdfs,        works: acc.aco.works.size },
-      waqfeya: { pdfs: acc.waqfeya.pdfs,    works: acc.waqfeya.works.size },
-    },
+    shamelaNative:  toMap(disciplines.shamela_native),
+    acoNative:      toMap(disciplines.aco_native),
+    waqfeyaNative:  toMap(disciplines.waqfeya_native),
+    shamelaUnified: toMap(disciplines.shamela_unified),
+    acoUnified:     toMap(disciplines.aco_unified),
+    waqfeyaUnified: toMap(disciplines.waqfeya_unified),
+    totals:         disciplines.totals,
   };
 }
 
@@ -994,14 +955,14 @@ function makeUnifiedChart(canvasId) {
 
 const DISC = { agg: null, charts: null, metric: 'pdfs', lang: 'ar' };
 
-function initDisciplineCharts(data) {
+function initDisciplineCharts(summary) {
   if (typeof Chart === 'undefined') {
     document.getElementById('discipline-panel').insertAdjacentHTML('beforeend',
       '<p class="loading-cell">Chart.js failed to load — discipline charts unavailable.</p>');
     return;
   }
 
-  DISC.agg = aggregateDisciplines(data);
+  DISC.agg = disciplinesFromSummary(summary.disciplines);
   DISC.charts = {
     shamela: makeSingleBarChart('chart-shamela', SHAMELA_BAR),
     aco:     makeSingleBarChart('chart-aco',     ACO_BAR),

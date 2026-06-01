@@ -374,6 +374,15 @@ h1 {
   padding-top: 4px;
 }
 .results-summary strong { color: var(--text); font-weight: 600; }
+.results-summary .hint { font-style: italic; opacity: 0.85; }
+.results-summary .loading-pulse {
+  font-style: italic;
+  animation: lpPulse 1.2s ease-in-out infinite;
+}
+@keyframes lpPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
 
 /* Table */
 
