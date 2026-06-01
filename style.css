@@ -29,7 +29,6 @@ body {
 
 .page-header,
 .section-intro,
-.stats,
 .page-footer {
   max-width: 1200px;
   margin-left: auto;
@@ -78,44 +77,6 @@ h1 {
 }
 .subtitle { color: var(--text-muted); font-size: 1.05rem; margin: 0; }
 
-/* ─── Stats tiles ──────────────────────────────────────── */
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 56px;
-}
-.tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 24px 22px;
-  box-shadow: var(--shadow);
-}
-.tile-value {
-  font-family: var(--serif);
-  font-size: 2.4rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.tile-label { margin-top: 10px; font-size: 0.95rem; font-weight: 600; }
-.tile-sub {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-.tile-footnote {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 0.72rem;
-  font-style: italic;
-  opacity: 0.85;
-}
-
 /* ─── Footer ───────────────────────────────────────────── */
 
 .page-footer {
@@ -130,15 +91,9 @@ h1 {
 
 /* ─── Responsive ───────────────────────────────────────── */
 
-@media (max-width: 880px) {
-  .stats { grid-template-columns: 1fr; }
-}
-
 @media (max-width: 560px) {
-  .stats { grid-template-columns: 1fr; }
   .page-header,
   .section-intro,
-  .stats,
   .info-panel,
   .page-footer {
     padding-left: 20px;
@@ -146,7 +101,6 @@ h1 {
   }
   .info-panel { padding: 24px; }
   h1 { font-size: 1.8rem; }
-  .tile-value { font-size: 2.1rem; }
 }
 
 /* ═══════════════════════════════════════════════════════════
