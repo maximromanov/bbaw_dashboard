@@ -18,24 +18,24 @@
 
   <section class="stats" aria-label="Headline corpus statistics">
     <article class="tile">
-      <div class="tile-value">29,908</div>
+      <div class="tile-value">41,265</div>
       <div class="tile-label">Records</div>
-      <div class="tile-sub">17,790 ACO · 11,578 Shamela PDFs · 540 other</div>
+      <div class="tile-sub">17,699 ACO · 11,578 Shamela PDFs · 11,448 Waqfeya · 540 other</div>
     </article>
     <article class="tile">
-      <div class="tile-value">~17,000</div>
+      <div class="tile-value">~28,000</div>
       <div class="tile-label">Unique works</div>
-      <div class="tile-sub">12,554 ACO · 4,251 Shamela PDFs (by work_id)</div>
+      <div class="tile-sub">12,554 ACO · 4,251 Shamela PDFs · 11,448 Waqfeya (by work_id)</div>
     </article>
     <article class="tile">
-      <div class="tile-value">10.8 M</div>
+      <div class="tile-value">18.8 M</div>
       <div class="tile-label">Pages</div>
-      <div class="tile-sub">5.96 M ACO · 4.54 M Shamela PDFs · 0.30 M other</div>
+      <div class="tile-sub">5.93 M ACO · 4.54 M Shamela · 8.04 M Waqfeya · 0.30 M other<br><span class="tile-footnote">Waqfeya pages known for 10,301 of 11,448 records</span></div>
     </article>
     <article class="tile">
-      <div class="tile-value">90 GB</div>
+      <div class="tile-value">340 GB</div>
       <div class="tile-label">Known file size</div>
-      <div class="tile-sub">Shamela PDFs + personal_other (ACO sizes unknown)</div>
+      <div class="tile-sub">Shamela + Waqfeya + personal_other (ACO sizes unknown)</div>
     </article>
   </section>
 
@@ -449,7 +449,7 @@
             </tbody>
           </table>
         </div>
-        <p class="hist-caption">Unique works summed per source; cross-source overlap is small. Personal/Other records have no <code>work_id</code> assigned.</p>
+        <p class="hist-caption">Unique works summed per source; cross-source overlap is small. Personal/Other records have no <code>work_id</code> assigned. Waqfeya rows carry a synthetic 1:1 <code>work_id</code> (the catalog has no cross-row work grouping), so volumes ≈ works for that source.</p>
       </div>
 
       <div class="stats-col">
@@ -508,16 +508,23 @@
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs Shamela PDFs</h3>
-      <p class="chart-caption">Coarse mapping of both schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where Shamela PDFs has no equivalent.</p>
+      <h3 class="chart-title">Waqfeya — Dewey-like Arabic adaptation (~130 categories)</h3>
+      <p class="chart-caption">Al-Maktaba al-Waqfiyya's catalog scheme — Dewey decimal numbers prefixed onto Arabic-language category labels. More granular than LC for Islamic disciplines (madhhab-level fiqh, distinct ḥadīṯ subgenres), still less emic than Shamela's tradition-internal vocabulary.</p>
+      <div class="chart-host h-waqfeya"><canvas id="chart-waqfeya"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs Shamela vs Waqfeya</h3>
+      <p class="chart-caption">Coarse mapping of all three schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where the more emic schemes have no equivalent.</p>
       <div class="chart-legend">
         <span class="lg-swatch lg-aco"></span> ACO
         <span class="lg-swatch lg-shamela"></span> Shamela PDFs
+        <span class="lg-swatch lg-waqfeya"></span> Waqfeya
       </div>
       <div class="chart-host h-unified"><canvas id="chart-unified"></canvas></div>
     </div>
 
-    <p class="interpretive" dir="ltr">These three views together demonstrate why neither existing classification scheme is adequate for the computational study of the Arabic written tradition. Shamela PDFs over-specifies along confessional and authorial lines: madhhab-specific fiqh, dedicated author corpora (Ibn Taymiyya, al-Albānī, Ibn al-Qayyim, Ibn Abī al-Dunyā), and small subgenres that reflect the catalogers' theological priorities rather than the tradition's intellectual geography. The Library of Congress, applied to ACO, over-generalizes in the opposite direction: nearly 5,000 volumes (28% of the collection) collapse into a single "Philosophy, Psychology, Religion" bucket, fusing exegesis, ḥadīṯ studies, theology, law, devotional literature, and Sufism into one undifferentiated category. The mapping table above is a least-common-denominator alignment; the asymmetry between the two sources — particularly the size of the "(مختلط) / mixed" buckets — is itself the strongest argument that a computational typology, calibrated to the formal and rhetorical properties of the works themselves, is required for research on the tradition.</p>
+    <p class="interpretive" dir="ltr">These four views together demonstrate why none of the existing classification schemes is adequate for the computational study of the Arabic written tradition. Shamela PDFs over-specifies along confessional and authorial lines: madhhab-specific fiqh, dedicated author corpora (Ibn Taymiyya, al-Albānī, Ibn al-Qayyim, Ibn Abī al-Dunyā), and small subgenres that reflect the catalogers' theological priorities rather than the tradition's intellectual geography. The Library of Congress, applied to ACO, over-generalizes in the opposite direction: nearly 5,000 volumes (28% of the collection) collapse into a single "Philosophy, Psychology, Religion" bucket, fusing exegesis, ḥadīṯ studies, theology, law, devotional literature, and Sufism into one undifferentiated category. Al-Maktaba al-Waqfiyya's Dewey-derived scheme sits between the two: more granular than LC for Islamic disciplines (separate buckets for the four Sunnī madhhabs, distinct ḥadīṯ subgenres), still less emic than Shamela's tradition-internal vocabulary, and importing Dewey's Western-encyclopedic top-level structure into Arabic-language cataloging. The mapping table above is a least-common-denominator alignment; the asymmetry between the three sources — particularly the size of the "(مختلط) / mixed" buckets and the silence of Western schemes about most of the intra-Islamic distinctions Shamela makes explicit — is itself the strongest argument that a computational typology, calibrated to the formal and rhetorical properties of the works themselves, is required for research on the tradition.</p>
   </section>
 
   <!-- ═══ Corpus browser ═══════════════════════════════════ -->
@@ -538,6 +545,7 @@
             <option value="">All sources</option>
             <option value="aco">ACO</option>
             <option value="shamela_ay">Shamela PDFs</option>
+            <option value="waqfeya">Waqfeya</option>
             <option value="personal_other">Personal / Other</option>
           </select>
         </label>
@@ -590,7 +598,7 @@
   </section>
 
   <footer class="page-footer">
-    <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + Shamela PDFs + personal collections · 2026</p>
+    <p>Corpus snapshot · ACO (NYU Libraries, NYU Abu Dhabi) + Shamela PDFs + al-Maktaba al-Waqfiyya + personal collections · 2026</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>

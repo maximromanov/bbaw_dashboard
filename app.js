@@ -276,6 +276,7 @@ function median(arr) {
 const SOURCE_LABELS = {
   aco:            'ACO',
   shamela_ay:     'Shamela PDFs',
+  waqfeya:        'Waqfeya',
   personal_other: 'Personal / Other',
 };
 
@@ -291,7 +292,7 @@ function renderBreakdownTable(data) {
   let totalVols = 0, totalPages = 0, totalWorks = 0;
   const allPagesGlobal = [];
 
-  for (const src of ['aco', 'shamela_ay', 'personal_other']) {
+  for (const src of ['aco', 'shamela_ay', 'waqfeya', 'personal_other']) {
     const recs = data.filter((r) => r.source === src);
     const withPages = recs.map((r) => r.pages).filter((p) => typeof p === 'number' && p > 0);
     const workIds = new Set(recs.map((r) => r.work_id).filter(Boolean));
@@ -636,6 +637,7 @@ function sourceBadgeHtml(src) {
   const map = {
     aco:            { label: 'ACO',     cls: 'src-aco' },
     shamela_ay:     { label: 'Shamela', cls: 'src-shamela' },
+    waqfeya:        { label: 'Waqfeya', cls: 'src-waqfeya' },
     personal_other: { label: 'Other',   cls: 'src-other' },
   };
   const cfg = map[src] || { label: escapeHtml(src || '—'), cls: 'src-other' };
@@ -686,6 +688,7 @@ function handleBrowseClick(e) {
 
 const SHAMELA_BAR = '#6a9a76';
 const ACO_BAR     = '#5d7da6';
+const WAQFEYA_BAR = '#b8865c';
 
 const UNIFIED_ORDER = [
   'علوم القرآن',
@@ -795,6 +798,46 @@ const SHAMELA_NATIVE_TRANSLATIONS = {
   'كتب ابن أبي الدنيا':               'Works of Ibn Abī al-Dunyā',
 };
 
+// Waqfeya emic categories — Dewey-prefixed Arabic labels → English (top ~25).
+// Categories below the chart's top-N cut-off don't need translations; they
+// fall through to the Arabic-only fallback in bilingualLabelEntry().
+const WAQFEYA_NATIVE_TRANSLATIONS = {
+  '217 كتب الفقه العام':                         'General Jurisprudence (*fiqh*)',
+  '920 كتب التراجم والأعلام':                   'Biographical Dictionaries (*tarāǧim*)',
+  '213.7 باقي مجموعات الحديث':                  'Other Ḥadīṯ Collections',
+  '214 كتب التوحيد والعقيدة':                   'Theology & Creed (*tawḥīd* & *ʿaqīda*)',
+  '216.1 كتب أصول الفقه وقواعده':               'Legal Theory & Maxims (*uṣūl al-fiqh*)',
+  '218.1 كتب التزكية والأخلاق والآداب':         'Piety, Ethics & Etiquette (*tazkiya*)',
+  '213.1 كتب مصطلح الحديث':                     'Ḥadīṯ Terminology (*muṣṭalaḥ*)',
+  '810 كتب الأدب':                              'Adab Literature',
+  '215 الفرق والأديان والردود':                 'Sects, Religions & Refutations',
+  '956 كتب التاريخ الإسلامي':                    'Islamic History',
+  '218.5 كتب الدعوة والدفاع عن الإسلام':         'Daʿwa & Apologetics',
+  '211 كتب علوم القرآن':                         'Qurʾānic Sciences',
+  '213.3 كتب الجرح والتعديل':                   'Ḥadīṯ Critic Biography (*ǧarḥ wa-taʿdīl*)',
+  '213.4 كتب الكتب الستة':                       'The Six Canonical Ḥadīṯ Books',
+  '218.4 كتب الثقافة الإسلامية العامة':          'General Islamic Culture',
+  '212 كتب التفاسير':                            'Qurʾān Commentaries (*tafāsīr*)',
+  '216.9 كتب السياسة الشرعية والأحكام السلطانية': 'Islamic Governance & Sultanic Law',
+  '213.6 كتب المسانيد الأخرى والجوامع':          'Other Musnads & Collections',
+  '219 كتب السيرة النبوية':                      'Prophetic Biography (*sīra*)',
+  '217.4 كتب الفقه الحنبلي':                    'Ḥanbalī Jurisprudence',
+  '415 كتب النحو والصرف':                       'Grammar & Morphology (*naḥw* & *ṣarf*)',
+  '910 كتب الجغرافيا والرحلات':                  'Geography & Travel',
+  '215 الشيعة والرافضة والباطنية والبهائية والقاديانية': 'Shīʿa & Heterodox Sects',
+  '218.2 مكتبة شهر رمضان':                       'Ramadan Library',
+  '218.2 كتب الأذكار والشعائر':                  'Devotional Litanies & Rites',
+  '811 دواوين الشعر':                            'Poetry Collections (*dīwāns*)',
+  '215 اليهود والنصارى والمستشرقون..':          'Jews, Christians & Orientalists',
+  '211.9 كتب مباحث قرآنية عامة':                 'General Qurʾānic Studies',
+  '211.8 كتب التجويد والقراءات':                 'Recitation & Variant Readings',
+  '410 كتب اللغة':                              'Linguistics',
+  '217.9 كتب الفتاوى':                          'Legal Opinions (*fatāwā*)',
+  '217.2 كتب الفقه المالكي':                    'Mālikī Jurisprudence',
+  '217.3 كتب الفقه الشافعي':                    'Shāfiʿī Jurisprudence',
+  '413 المعاجم اللغوية العربية':                 'Arabic Lexicography',
+};
+
 // Convert markdown-style *italic* runs into HTML <em>, escaping the rest.
 function processItalics(text) {
   return String(text || '').split(/\*([^*]+)\*/g)
@@ -877,38 +920,29 @@ function looksLikeJunkCategory(label) {
 
 function aggregateDisciplines(data) {
   const fresh = () => ({ pdfs: 0, works: new Set() });
-  const sN = new Map(), aN = new Map();
-  const sU = new Map(), aU = new Map();
-  const sWorks = new Set(), aWorks = new Set();
-  let sPdfs = 0, aPdfs = 0;
+
+  // Per-source per-discipline maps for both the native and unified axes.
+  const acc = {
+    aco:        { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
+    shamela_ay: { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
+    waqfeya:    { native: new Map(), unified: new Map(), pdfs: 0, works: new Set() },
+  };
 
   for (const r of data) {
-    if (r.source === 'shamela_ay') {
-      sPdfs++;
-      if (r.work_id) sWorks.add(r.work_id);
-      if (r.discipline_native) {
-        if (!sN.has(r.discipline_native)) sN.set(r.discipline_native, fresh());
-        const v = sN.get(r.discipline_native);
-        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-      }
-      if (r.discipline_normalized) {
-        if (!sU.has(r.discipline_normalized)) sU.set(r.discipline_normalized, fresh());
-        const v = sU.get(r.discipline_normalized);
-        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-      }
-    } else if (r.source === 'aco') {
-      aPdfs++;
-      if (r.work_id) aWorks.add(r.work_id);
-      if (r.discipline_native) {
-        if (!aN.has(r.discipline_native)) aN.set(r.discipline_native, fresh());
-        const v = aN.get(r.discipline_native);
-        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-      }
-      if (r.discipline_normalized) {
-        if (!aU.has(r.discipline_normalized)) aU.set(r.discipline_normalized, fresh());
-        const v = aU.get(r.discipline_normalized);
-        v.pdfs++; if (r.work_id) v.works.add(r.work_id);
-      }
+    const bucket = acc[r.source];
+    if (!bucket) continue;  // personal_other has no disciplines
+    bucket.pdfs++;
+    if (r.work_id) bucket.works.add(r.work_id);
+
+    if (r.discipline_native) {
+      if (!bucket.native.has(r.discipline_native)) bucket.native.set(r.discipline_native, fresh());
+      const v = bucket.native.get(r.discipline_native);
+      v.pdfs++; if (r.work_id) v.works.add(r.work_id);
+    }
+    if (r.discipline_normalized) {
+      if (!bucket.unified.has(r.discipline_normalized)) bucket.unified.set(r.discipline_normalized, fresh());
+      const v = bucket.unified.get(r.discipline_normalized);
+      v.pdfs++; if (r.work_id) v.works.add(r.work_id);
     }
   }
 
@@ -918,13 +952,16 @@ function aggregateDisciplines(data) {
     return out;
   };
   return {
-    shamelaNative:  flatten(sN),
-    acoNative:      flatten(aN),
-    shamelaUnified: flatten(sU),
-    acoUnified:     flatten(aU),
+    shamelaNative:  flatten(acc.shamela_ay.native),
+    acoNative:      flatten(acc.aco.native),
+    waqfeyaNative:  flatten(acc.waqfeya.native),
+    shamelaUnified: flatten(acc.shamela_ay.unified),
+    acoUnified:     flatten(acc.aco.unified),
+    waqfeyaUnified: flatten(acc.waqfeya.unified),
     totals: {
-      shamela: { pdfs: sPdfs, works: sWorks.size },
-      aco:     { pdfs: aPdfs, works: aWorks.size },
+      shamela: { pdfs: acc.shamela_ay.pdfs, works: acc.shamela_ay.works.size },
+      aco:     { pdfs: acc.aco.pdfs,        works: acc.aco.works.size },
+      waqfeya: { pdfs: acc.waqfeya.pdfs,    works: acc.waqfeya.works.size },
     },
   };
 }
@@ -1040,21 +1077,33 @@ function buildAcoPayload(metric, agg) {
   return topNWithOther(entries, metric, total, 15);
 }
 
+function buildWaqfeyaPayload(metric, agg) {
+  const entries = [...agg.waqfeyaNative.entries()];
+  const total = agg.totals.waqfeya[metric];
+  return topNWithOther(entries, metric, total, 20);
+}
+
 function buildUnifiedPayload(metric, agg) {
   const acoTot = agg.totals.aco[metric];
   const shTot  = agg.totals.shamela[metric];
-  const acoData = [], shData = [], acoPcts = [], shPcts = [];
+  const wqTot  = agg.totals.waqfeya[metric];
+  const acoData = [], shData = [], wqData = [];
+  const acoPcts = [], shPcts = [], wqPcts = [];
   for (const k of UNIFIED_ORDER) {
     const a = agg.acoUnified.get(k);
     const s = agg.shamelaUnified.get(k);
+    const w = agg.waqfeyaUnified.get(k);
     const av = a ? a[metric] : 0;
     const sv = s ? s[metric] : 0;
+    const wv = w ? w[metric] : 0;
     acoData.push(av);
     shData.push(sv);
+    wqData.push(wv);
     acoPcts.push(acoTot > 0 ? (av / acoTot) * 100 : 0);
     shPcts.push (shTot  > 0 ? (sv / shTot ) * 100 : 0);
+    wqPcts.push (wqTot  > 0 ? (wv / wqTot ) * 100 : 0);
   }
-  return { labels: UNIFIED_ORDER, acoData, shData, acoPcts, shPcts };
+  return { labels: UNIFIED_ORDER, acoData, shData, wqData, acoPcts, shPcts, wqPcts };
 }
 
 // Padding-left allocates room for the HTML-overlay axis labels.
@@ -1118,6 +1167,7 @@ function makeUnifiedChart(canvasId) {
       datasets: [
         { label: 'ACO',     data: [], pcts: [], backgroundColor: ACO_BAR,     borderRadius: 2, borderSkipped: false },
         { label: 'Shamela', data: [], pcts: [], backgroundColor: SHAMELA_BAR, borderRadius: 2, borderSkipped: false },
+        { label: 'Waqfeya', data: [], pcts: [], backgroundColor: WAQFEYA_BAR, borderRadius: 2, borderSkipped: false },
       ],
     },
     options: {
@@ -1170,6 +1220,7 @@ function initDisciplineCharts(data) {
   DISC.charts = {
     shamela: makeSingleBarChart('chart-shamela', SHAMELA_BAR),
     aco:     makeSingleBarChart('chart-aco',     ACO_BAR),
+    waqfeya: makeSingleBarChart('chart-waqfeya', WAQFEYA_BAR),
     unified: makeUnifiedChart  ('chart-unified'),
   };
 
@@ -1228,6 +1279,13 @@ function updateDisciplineCharts() {
   DISC.charts.aco.data.datasets[0].pcts = a.pcts;
   DISC.charts.aco.update();
 
+  const w = buildWaqfeyaPayload(m, DISC.agg);
+  DISC.charts.waqfeya.$labelEntries = entriesFromPayload(w, WAQFEYA_NATIVE_TRANSLATIONS, lang);
+  DISC.charts.waqfeya.data.labels = DISC.charts.waqfeya.$labelEntries.map((e) => e.primary);
+  DISC.charts.waqfeya.data.datasets[0].data = w.values;
+  DISC.charts.waqfeya.data.datasets[0].pcts = w.pcts;
+  DISC.charts.waqfeya.update();
+
   const u = buildUnifiedPayload(m, DISC.agg);
   DISC.charts.unified.$labelEntries =
     UNIFIED_ORDER.map((k) => bilingualLabelEntry(k, BUCKET_TRANSLATIONS, lang));
@@ -1236,5 +1294,7 @@ function updateDisciplineCharts() {
   DISC.charts.unified.data.datasets[0].pcts = u.acoPcts;
   DISC.charts.unified.data.datasets[1].data = u.shData;
   DISC.charts.unified.data.datasets[1].pcts = u.shPcts;
+  DISC.charts.unified.data.datasets[2].data = u.wqData;
+  DISC.charts.unified.data.datasets[2].pcts = u.wqPcts;
   DISC.charts.unified.update();
 }

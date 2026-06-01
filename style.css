@@ -95,6 +95,13 @@ h1 {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+.tile-footnote {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-style: italic;
+  opacity: 0.85;
+}
 
 /* ─── Calculator container ─────────────────────────────── */
 
@@ -1011,6 +1018,7 @@ input[type=number]:focus {
 }
 .src-aco     { background: #e2eaf3; color: #2c4d7a; border: 1px solid #c6d4e6; }
 .src-shamela { background: #e0eee4; color: #2f5e3c; border: 1px solid #c5dfcc; }
+.src-waqfeya { background: #f3e6d6; color: #7a5333; border: 1px solid #e2cdad; }
 .src-other   { background: #ececec; color: #555;    border: 1px solid #d6d6d6; }
 
 /* Copy-path inline tooltip */
@@ -1263,6 +1271,7 @@ input[type=number]:focus {
 .chart-legend .lg-swatch:first-child { margin-left: 0; }
 .lg-aco     { background: #5d7da6; }
 .lg-shamela { background: #6a9a76; }
+.lg-waqfeya { background: #b8865c; }
 
 .chart-host {
   position: relative;
@@ -1273,6 +1282,7 @@ input[type=number]:focus {
 }
 .chart-host.h-shamela { height: 920px; }
 .chart-host.h-aco     { height: 720px; }
+.chart-host.h-waqfeya { height: 920px; }
 .chart-host.h-unified { height: 820px; }
 
 /* HTML overlay axis labels (bilingual EN + AR stacked) */
@@ -1331,6 +1341,7 @@ input[type=number]:focus {
 @media (max-width: 720px) {
   .chart-host.h-shamela { height: 800px; }
   .chart-host.h-aco     { height: 620px; }
+  .chart-host.h-waqfeya { height: 800px; }
   .chart-host.h-unified { height: 720px; }
 }
 
