@@ -58,12 +58,31 @@ const arClass    = (s) => isArabic(s) ? ' arabic' : '';
 //   A · Corpus at a glance — stats panel (renders from summary.json)
 // ═══════════════════════════════════════════════════════════
 
+// Proposal-canonical collection names. `italic` flags al-Maktaba al-Waqfiyya
+// as a transliterated Arabic title (rendered with <em> in HTML contexts; in
+// form controls like <option> we rely on CSS to italicize a specific value).
 const SOURCE_LABELS = {
-  aco:            'ACO',
-  shamela_ay:     'Shamela PDFs',
-  waqfeya:        'Waqfeya',
-  personal_other: 'Personal / Other',
+  aco:            { text: 'Arabic Collections Online' },
+  shamela_ay:     { text: 'ShamelaAY-PDF' },
+  waqfeya:        { text: 'al-Maktaba al-Waqfiyya', italic: true },
+  personal_other: { text: 'Personal / Other' },
 };
+
+function sourceLabelText(src) {
+  const l = SOURCE_LABELS[src];
+  return l ? l.text : src;
+}
+
+function sourceLabelHtml(src) {
+  const l = SOURCE_LABELS[src];
+  if (!l) return escapeHtml(src);
+  return l.italic ? `<em>${escapeHtml(l.text)}</em>` : escapeHtml(l.text);
+}
+
+// Sources that count toward the proposal-collection sub-totals shown in
+// the per-source breakdown table. Personal/Other is intentionally excluded
+// from this view per the proposal's source-collections framing.
+const PROPOSAL_SOURCES = ['aco', 'shamela_ay', 'waqfeya'];
 
 function initStatsPanel(summary) {
   renderBreakdownTable(summary.per_source, summary.totals);
@@ -72,30 +91,48 @@ function initStatsPanel(summary) {
   renderTopVolumes(summary.top_volumes);
 }
 
-function renderBreakdownTable(perSource, totals) {
-  const rows = perSource.map((s) => ({
-    label:    s.label,
-    vols:     s.records,
-    works:    s.works,
-    pages:    s.pages,
-    avg:      s.avg_pp,
-    median:   s.median_pp,
-    hasWorks: s.has_works,
+function renderBreakdownTable(perSource /*, totals */) {
+  // Show only the proposal collections; Personal/Other is excluded from this
+  // view (its records remain searchable in the Title Browser).
+  const proposal = perSource.filter((s) => PROPOSAL_SOURCES.includes(s.source));
+
+  const rows = proposal.map((s) => ({
+    labelHtml: sourceLabelHtml(s.source),
+    vols:      s.records,
+    works:     s.works,
+    pages:     s.pages,
+    avg:       s.avg_pp,
+    median:    s.median_pp,
+    hasWorks:  s.has_works,
   }));
+
+  // TOTAL sums the visible (proposal-collection) rows.
+  const sum = (k) => proposal.reduce((a, s) => a + (s[k] || 0), 0);
+  const totalVols  = sum('records');
+  const totalWorks = sum('works');
+  const totalPages = sum('pages');
+  // Per-row "avg pp" excludes zero-page records (matches summary.json semantics).
+  // Recover that denominator per source via pages/avg_pp, sum, then divide.
+  // Median can't be recovered without per-record data — leave it null.
+  const totalRecsWithPages = proposal.reduce((a, s) =>
+    a + (s.avg_pp ? Math.round(s.pages / s.avg_pp) : 0), 0);
+  const totalAvg = totalRecsWithPages > 0
+    ? Math.round(totalPages / totalRecsWithPages) : null;
+
   rows.push({
-    label:    'TOTAL',
-    vols:     totals.records,
-    works:    totals.works,
-    pages:    totals.pages,
-    avg:      totals.avg_pp,
-    median:   totals.median_pp,
-    hasWorks: true,
-    isTotal:  true,
+    labelHtml: '<strong>TOTAL</strong>',
+    vols:      totalVols,
+    works:     totalWorks,
+    pages:     totalPages,
+    avg:       totalAvg,
+    median:    null,
+    hasWorks:  true,
+    isTotal:   true,
   });
 
   $('breakdown-body').innerHTML = rows.map((r) => `
     <tr class="${r.isTotal ? 'total-row' : ''}">
-      <td>${escapeHtml(r.label)}</td>
+      <td>${r.labelHtml}</td>
       <td class="num">${fmtN(r.vols)}</td>
       <td class="num">${r.hasWorks ? fmtN(r.works) : '—'}</td>
       <td class="num">${fmtN(r.pages)}</td>
@@ -166,11 +203,15 @@ function initBrowserPlaceholder(summary) {
     discSelect.appendChild(o);
   }
 
-  // Source dropdown is hardcoded in HTML; annotate it with the counts.
+  // Source dropdown is hardcoded in HTML; annotate it with the counts and
+  // override any stale labels in summary.json with the canonical names from
+  // SOURCE_LABELS. <option> elements can't carry HTML, so the italic flag
+  // for al-Maktaba al-Waqfiyya is dropped here (the breakdown table, badges,
+  // and tile sub-text below render it with <em>).
   if (Array.isArray(summary.source_filter_options)) {
     for (const opt of summary.source_filter_options) {
       const optionEl = document.querySelector(`#b-source option[value="${opt.value}"]`);
-      if (optionEl) optionEl.textContent = `${opt.label} (${fmtN(opt.count)})`;
+      if (optionEl) optionEl.textContent = `${sourceLabelText(opt.value)} (${fmtN(opt.count)})`;
     }
   }
 
@@ -409,14 +450,14 @@ function detailRowHtml(r) {
 }
 
 function sourceBadgeHtml(src) {
-  const map = {
-    aco:            { label: 'ACO',     cls: 'src-aco' },
-    shamela_ay:     { label: 'Shamela', cls: 'src-shamela' },
-    waqfeya:        { label: 'Waqfeya', cls: 'src-waqfeya' },
-    personal_other: { label: 'Other',   cls: 'src-other' },
+  const clsMap = {
+    aco:            'src-aco',
+    shamela_ay:     'src-shamela',
+    waqfeya:        'src-waqfeya',
+    personal_other: 'src-other',
   };
-  const cfg = map[src] || { label: escapeHtml(src || '—'), cls: 'src-other' };
-  return `<span class="src-badge ${cfg.cls}">${cfg.label}</span>`;
+  const cls = clsMap[src] || 'src-other';
+  return `<span class="src-badge ${cls}">${sourceLabelHtml(src)}</span>`;
 }
 
 function localPath(r) {
@@ -911,9 +952,9 @@ function makeUnifiedChart(canvasId) {
     data: {
       labels: UNIFIED_ORDER,
       datasets: [
-        { label: 'ACO',     data: [], pcts: [], backgroundColor: ACO_BAR,     borderRadius: 2, borderSkipped: false },
-        { label: 'Shamela', data: [], pcts: [], backgroundColor: SHAMELA_BAR, borderRadius: 2, borderSkipped: false },
-        { label: 'Waqfeya', data: [], pcts: [], backgroundColor: WAQFEYA_BAR, borderRadius: 2, borderSkipped: false },
+        { label: sourceLabelText('aco'),        data: [], pcts: [], backgroundColor: ACO_BAR,     borderRadius: 2, borderSkipped: false },
+        { label: sourceLabelText('shamela_ay'), data: [], pcts: [], backgroundColor: SHAMELA_BAR, borderRadius: 2, borderSkipped: false },
+        { label: sourceLabelText('waqfeya'),    data: [], pcts: [], backgroundColor: WAQFEYA_BAR, borderRadius: 2, borderSkipped: false },
       ],
     },
     options: {

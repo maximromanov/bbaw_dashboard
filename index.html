@@ -24,17 +24,17 @@
     <article class="tile">
       <div class="tile-value">41,265</div>
       <div class="tile-label">Records</div>
-      <div class="tile-sub">17,699 ACO · 11,578 Shamela PDFs · 11,448 Waqfeya · 540 other</div>
+      <div class="tile-sub">17,699 Arabic Collections Online · 11,578 ShamelaAY-PDF · 11,448 <em>al-Maktaba al-Waqfiyya</em> · 540 other</div>
     </article>
     <article class="tile">
       <div class="tile-value">~28,000</div>
       <div class="tile-label">Unique works</div>
-      <div class="tile-sub">12,554 ACO · 4,251 Shamela PDFs · 11,448 Waqfeya (by work_id)</div>
+      <div class="tile-sub">12,554 Arabic Collections Online · 4,251 ShamelaAY-PDF · 11,448 <em>al-Maktaba al-Waqfiyya</em> (by work_id)</div>
     </article>
     <article class="tile">
       <div class="tile-value">18.8 M</div>
       <div class="tile-label">Pages</div>
-      <div class="tile-sub">5.93 M ACO · 4.54 M Shamela · 8.04 M Waqfeya · 0.30 M other<br><span class="tile-footnote">Waqfeya pages known for 10,301 of 11,448 records</span></div>
+      <div class="tile-sub">5.93 M Arabic Collections Online · 4.54 M ShamelaAY-PDF · 8.04 M <em>al-Maktaba al-Waqfiyya</em> · 0.30 M other<br><span class="tile-footnote"><em>al-Maktaba al-Waqfiyya</em> pages known for 10,301 of 11,448 records</span></div>
     </article>
   </section>
 
@@ -65,7 +65,7 @@
             </tbody>
           </table>
         </div>
-        <p class="hist-caption">Unique works summed per source; cross-source overlap is small. Personal/Other records have no <code>work_id</code> assigned. Waqfeya rows carry a synthetic 1:1 <code>work_id</code> (the catalog has no cross-row work grouping), so volumes ≈ works for that source.</p>
+        <p class="hist-caption">Unique works summed per source; cross-source overlap is small. Personal/Other records have no <code>work_id</code> assigned. <em>al-Maktaba al-Waqfiyya</em> rows carry a synthetic 1:1 <code>work_id</code> (the catalog has no cross-row work grouping), so volumes ≈ works for that source.</p>
       </div>
 
       <div class="stats-col">
@@ -112,30 +112,30 @@
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">Shamela PDFs — emic disciplines (41 categories)</h3>
-      <p class="chart-caption">Shamela's tradition-internal classification — granular but inconsistent (e.g., author corpora as a category).</p>
+      <h3 class="chart-title">ShamelaAY-PDF — emic disciplines (41 categories)</h3>
+      <p class="chart-caption">ShamelaAY-PDF's tradition-internal classification — granular but inconsistent (e.g., author corpora as a category).</p>
       <div class="chart-host h-shamela"><canvas id="chart-shamela"></canvas></div>
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">ACO — Library of Congress top-level (~20 real categories)</h3>
-      <p class="chart-caption">Western library classification — collapses tafsīr, ḥadīṯ, fiqh, kalām, and devotional literature into a single "Religion" bucket (~28% of all ACO records).</p>
+      <h3 class="chart-title">Arabic Collections Online — Library of Congress top-level (~20 real categories)</h3>
+      <p class="chart-caption">Western library classification — collapses tafsīr, ḥadīṯ, fiqh, kalām, and devotional literature into a single "Religion" bucket (~28% of all Arabic Collections Online records).</p>
       <div class="chart-host h-aco"><canvas id="chart-aco"></canvas></div>
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">Waqfeya — Dewey-like Arabic adaptation (~130 categories)</h3>
-      <p class="chart-caption">Al-Maktaba al-Waqfiyya's catalog scheme — Dewey decimal numbers prefixed onto Arabic-language category labels. More granular than LC for Islamic disciplines (madhhab-level fiqh, distinct ḥadīṯ subgenres), still less emic than Shamela's tradition-internal vocabulary.</p>
+      <h3 class="chart-title"><em>al-Maktaba al-Waqfiyya</em> — Dewey-like Arabic adaptation (~130 categories)</h3>
+      <p class="chart-caption"><em>al-Maktaba al-Waqfiyya</em>'s catalog scheme — Dewey decimal numbers prefixed onto Arabic-language category labels. More granular than LC for Islamic disciplines (madhhab-level fiqh, distinct ḥadīṯ subgenres), still less emic than ShamelaAY-PDF's tradition-internal vocabulary.</p>
       <div class="chart-host h-waqfeya"><canvas id="chart-waqfeya"></canvas></div>
     </div>
 
     <div class="chart-card">
-      <h3 class="chart-title">Unified 14-bucket taxonomy — ACO vs Shamela vs Waqfeya</h3>
+      <h3 class="chart-title">Unified 14-bucket taxonomy — Arabic Collections Online vs ShamelaAY-PDF vs <em>al-Maktaba al-Waqfiyya</em></h3>
       <p class="chart-caption">Coarse mapping of all three schemes onto a shared Arabic-tradition vocabulary. "(مختلط) / mixed" buckets are explicitly marked: they reveal where Library of Congress over-generalizes and where the more emic schemes have no equivalent.</p>
       <div class="chart-legend">
-        <span class="lg-swatch lg-aco"></span> ACO
-        <span class="lg-swatch lg-shamela"></span> Shamela PDFs
-        <span class="lg-swatch lg-waqfeya"></span> Waqfeya
+        <span class="lg-swatch lg-aco"></span> Arabic Collections Online
+        <span class="lg-swatch lg-shamela"></span> ShamelaAY-PDF
+        <span class="lg-swatch lg-waqfeya"></span> <em>al-Maktaba al-Waqfiyya</em>
       </div>
       <div class="chart-host h-unified"><canvas id="chart-unified"></canvas></div>
     </div>
@@ -159,9 +159,9 @@
           <span>Source</span>
           <select id="b-source" disabled>
             <option value="">All sources</option>
-            <option value="aco">ACO</option>
-            <option value="shamela_ay">Shamela PDFs</option>
-            <option value="waqfeya">Waqfeya</option>
+            <option value="aco">Arabic Collections Online</option>
+            <option value="shamela_ay">ShamelaAY-PDF</option>
+            <option value="waqfeya">al-Maktaba al-Waqfiyya</option>
             <option value="personal_other">Personal / Other</option>
           </select>
         </label>
@@ -214,7 +214,7 @@
   </section>
 
   <footer class="page-footer">
-    <p>Module 1 ingestion candidates · ACO (NYU Libraries, NYU Abu Dhabi) + Shamela PDFs + al-Maktaba al-Waqfiyya + personal collections · 2026</p>
+    <p>Module 1 ingestion candidates · Arabic Collections Online (NYU Libraries, NYU Abu Dhabi) + ShamelaAY-PDF + <em>al-Maktaba al-Waqfiyya</em> + personal collections · 2026</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.2/dist/umd/index.min.js"></script>

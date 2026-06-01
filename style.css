@@ -435,13 +435,13 @@ h1 {
   border-bottom-color: var(--accent);
 }
 
-.col-title    { width: 30%; }
-.col-author   { width: 16%; }
+.col-title    { width: 26%; }
+.col-author   { width: 14%; }
 .col-year     { width: 60px; }
-.col-place    { width: 10%; }
+.col-place    { width: 9%; }
 .col-pages    { width: 70px; }
-.col-disc     { width: 14%; }
-.col-source   { width: 80px; }
+.col-disc     { width: 12%; }
+.col-source   { width: 200px; }
 
 .title-cell .title-link,
 .title-cell .title-button {
@@ -473,9 +473,10 @@ h1 {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
+.src-badge em { font-style: italic; font-weight: 600; }
 .src-aco     { background: #e2eaf3; color: #2c4d7a; border: 1px solid #c6d4e6; }
 .src-shamela { background: #e0eee4; color: #2f5e3c; border: 1px solid #c5dfcc; }
 .src-waqfeya { background: #f3e6d6; color: #7a5333; border: 1px solid #e2cdad; }
