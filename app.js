@@ -84,6 +84,16 @@ function sourceLabelHtml(src) {
 // from this view per the proposal's source-collections framing.
 const PROPOSAL_SOURCES = ['aco', 'shamela_ay', 'waqfeya'];
 
+// Catalog-side PDF counts that don't match the dashboard's per-record count.
+// Waqfeya's catalog exposes multiple PDF parts per record (24k+ URLs across
+// download_urls arrays), but corpus_merged.json carries only the first PDF
+// per record (11,448) for search/display purposes. The proposal table cites
+// the catalog's total PDF-part count (26,246). Hardcoded here until the
+// August pass adds a per-record `pdf_count` at integration time.
+const PDF_COUNT_OVERRIDE = {
+  waqfeya: 26246,
+};
+
 function initStatsPanel(summary) {
   renderBreakdownTable(summary.per_source, summary.totals);
   renderHistogram(summary.histogram);
@@ -98,7 +108,7 @@ function renderBreakdownTable(perSource /*, totals */) {
 
   const rows = proposal.map((s) => ({
     labelHtml: sourceLabelHtml(s.source),
-    vols:      s.records,
+    vols:      PDF_COUNT_OVERRIDE[s.source] ?? s.records,
     works:     s.works,
     pages:     s.pages,
     avg:       s.avg_pp,
@@ -106,11 +116,11 @@ function renderBreakdownTable(perSource /*, totals */) {
     hasWorks:  s.has_works,
   }));
 
-  // TOTAL sums the visible (proposal-collection) rows.
-  const sum = (k) => proposal.reduce((a, s) => a + (s[k] || 0), 0);
-  const totalVols  = sum('records');
-  const totalWorks = sum('works');
-  const totalPages = sum('pages');
+  // TOTAL sums the visible (proposal-collection) rows, honoring any PDF-count
+  // overrides applied above.
+  const totalVols  = rows.reduce((a, r) => a + (r.vols  || 0), 0);
+  const totalWorks = rows.reduce((a, r) => a + (r.works || 0), 0);
+  const totalPages = rows.reduce((a, r) => a + (r.pages || 0), 0);
   // Per-row "avg pp" excludes zero-page records (matches summary.json semantics).
   // Recover that denominator per source via pages/avg_pp, sum, then divide.
   // Median can't be recovered without per-record data — leave it null.
