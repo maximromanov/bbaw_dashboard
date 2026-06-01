@@ -8,35 +8,40 @@ deployable to GitHub Pages, no backend.
 
 Single-page app, top to bottom:
 
-1. **Summary stats + cost calculator** — proposal-defense instrument.
-   Headline corpus numbers, then sliders for OCR/LLM costs, FTE-hours
-   per 1k pages, etc., with live recalculation of total Phase 1 budget.
+1. **Summary stats** — corpus headline numbers for proposal-defense use.
+   Records, unique works, pages, file size per source. Followed by the
+   "Corpus at a glance" panel with the per-source breakdown table, page-
+   distribution histogram, and longest-works lists.
 
 2. **Preliminary clusters** — pie/bar charts of discipline distribution.
-   Use the `discipline_normalized` field (14 buckets). Show ACO and 
-   ShamelaAY side-by-side; "(مختلط)" buckets are intentionally visible 
-   as the argument for L2 typology modeling.
+   Use the `discipline_normalized` field (14 buckets). Show ACO,
+   ShamelaAY, and Waqfeya side-by-side; "(مختلط)" buckets are intentionally
+   visible as the argument for L2 typology modeling.
 
-3. **Searchable metadata table** — full-text search over ~30k records.
+3. **Searchable metadata table** — full-text search over ~41k records.
    Use Lunr.js or MiniSearch from CDN, no backend.
 
 ## Data
 
-`data/corpus_merged.json` — single JSON array, 29,908 records.
+`data/corpus_merged.json` — single JSON array, 41,265 records.
 
 Each record has these key fields (full schema in `corpus_merged_summary.txt`):
-- `record_id`, `source` (`aco` | `shamela_ay` | `personal_other`)
+- `record_id`, `source` (`aco` | `shamela_ay` | `waqfeya` | `personal_other`)
 - `title`, `author`, `publisher`, `pub_year`, `pub_place`
 - `discipline_native` (raw label) and `discipline_normalized` (14-bucket)
 - `pages`, `mb`, `language`, `provider`
-- `permanent_link` (handle.net URL for ACO records)
-- `work_id` for grouping multi-volume sets
+- `permanent_link` (handle.net for ACO, waqfeya.net for Waqfeya)
+- `work_id` for grouping multi-volume sets (Waqfeya uses 1:1
+  `work_id == record_id` since its catalog has no cross-row grouping)
 
 Headline numbers (drop these into Layer 1 by default):
-- 29,908 records (17,790 ACO + 11,578 ShamelaAY + 540 personal_other)
-- ~17,000 unique works
-- 10.8 million pages
-- 90 GB known file sizes
+- 41,265 records (17,699 ACO + 11,578 ShamelaAY + 11,448 Waqfeya + 540 personal_other)
+- ~28,000 unique works
+- 18.8 million pages (Waqfeya pages known for 10,301 of 11,448 records)
+- 340 GB known file sizes
+
+To re-run the Waqfeya integration: `python3 scripts/integrate_waqfeya.py`
+(reads `data/waqfeya_books_light.csv`, idempotent on the same input).
 
 ## Tech stack — strict
 
@@ -60,6 +65,8 @@ https://sbb-majmus-corpus.netlify.app/
 - Don't introduce npm/webpack/vite unless I explicitly say so.
 - Don't add user accounts, persistence, or any "saving" features.
 - Don't pretty-print the JSON in code; the file is already non-indented.
+- Don't reintroduce the cost calculator. Headline stats only. The
+  reviewer-facing artifact does not surface FTE/OCR/LLM budget logic.
 
 ## Build order
 
